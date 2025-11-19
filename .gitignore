@@ -1,0 +1,63 @@
+# Visual Studio
+.vs/
+*.sln.docstates
+*.user
+*.userosscache
+*.suo
+*.opendb
+*.safetensors
+*.VC.db
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+[Aa]rguments/
+*.log
+*.pfx
+*.runtimeconfig.dev.json
+*.json
+project.lock.json
+
+# Packages
+packages/
+*.nupkg
+*.snupkg
+*.dll
+*.pdb
+
+# Rider
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Test Results
+TestResults/
+*.trx
+
+# Data and Other
+*.db
+*.sqlite
+*.bak
+*.mdf
+*.ldf
+*.sdf
+*.vssscc
+*.vspscc
+*.csproj.user
+*.resharper
+*.dotsettings
+*.tmp
+*.err
+*.pid
+*.boop
+*~
+# Logs
+logs/
+*.log
+
+# Windows
+Thumbs.db
+Desktop.ini
