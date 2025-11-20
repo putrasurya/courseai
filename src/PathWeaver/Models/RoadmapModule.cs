@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace PathWeaver.Models;
 
 public class RoadmapModule
@@ -7,4 +9,5 @@ public class RoadmapModule
     public int Order { get; set; }
     public int EstimatedTimeMinutes { get; set; }
     public List<RoadmapTopic> Topics { get; set; } = new List<RoadmapTopic>();
+    public int AverageConfidence => Topics.Any() ? (int)Topics.Average(t => t.ConfidenceScore) : 0;
 }

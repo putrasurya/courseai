@@ -7,4 +7,5 @@ public class RoadmapTopic
     public int Order { get; set; }
     public List<RoadmapConcept> Concepts { get; set; } = new();
     public List<LearningResource> Resources { get; set; } = new();
+    public int ConfidenceScore { get; set; } = 0;
 }

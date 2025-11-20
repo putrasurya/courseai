@@ -1,6 +1,7 @@
 @page "/roadmap"
 @rendermode InteractiveServer
 @using PathWeaver.Models
+@using System.Linq
 
 <PageTitle>PathWeaver - Your Learning Roadmap</PageTitle>
 
@@ -58,7 +59,10 @@
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="@($"heading{module.Order}")">
                         <button class="accordion-button @(module.Order == 1 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="@($"#collapse{module.Order}")" aria-expanded="@(module.Order == 1 ? "true" : "false")" aria-controls="@($"collapse{module.Order}")">
-                            Module @module.Order: @module.Title
+                            <span class="flex-grow-1">Module @module.Order: @module.Title</span>
+                            <div class="progress me-3" style="width: 200px;">
+                                <div class="progress-bar" role="progressbar" style="width: @module.AverageConfidence%;" aria-valuenow="@module.AverageConfidence" aria-valuemin="0" aria-valuemax="100">@module.AverageConfidence%</div>
+                            </div>
                         </button>
                     </h2>
                     <div id="@($"collapse{module.Order}")" class="accordion-collapse collapse @(module.Order == 1 ? "show" : "")" aria-labelledby="@($"heading{module.Order}")" data-bs-parent="@($"#moduleAccordion{module.Order}")">
@@ -69,8 +73,23 @@
                             @foreach (var topic in module.Topics.OrderBy(t => t.Order))
                             {
                                 <div class="card card-body bg-light mb-3 ms-3">
-                                    <h6 class="card-title">Topic @topic.Order: @topic.Title</h6>
-                                    <p class="card-text">@topic.Description</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="card-title mb-0">Topic @topic.Order: @topic.Title</h6>
+                                        <div>
+                                            <span class="badge bg-info me-2">Confidence: @topic.ConfidenceScore%</span>
+                                            <button @onclick="() => StartQuiz(topic)" class="btn btn-sm btn-secondary" disabled="@(isQuizzing.ContainsKey(topic) && isQuizzing[topic])">
+                                                 @if (isQuizzing.ContainsKey(topic) && isQuizzing[topic])
+                                                {
+                                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Quiz Me</span>
+                                                }
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="card-text mt-2">@topic.Description</p>
                                     
                                     @if (topic.Concepts.Any())
                                     {
@@ -125,11 +144,21 @@
     private bool isRefining = false;
     private bool isSuggestingChanges = false;
     private string userSuggestion = "";
+    private Dictionary<RoadmapTopic, bool> isQuizzing = new();
 
     protected override void OnInitialized()
     {
         // Generate mock roadmap data
         roadmap = GenerateMockRoadmap();
+    }
+    
+    private async Task StartQuiz(RoadmapTopic topic)
+    {
+        isQuizzing[topic] = true;
+        await Task.Delay(2000); // Simulate quiz time
+        topic.ConfidenceScore = new Random().Next(50, 101);
+        isQuizzing[topic] = false;
+        StateHasChanged();
     }
 
     private async Task SendRefinementRequest()
