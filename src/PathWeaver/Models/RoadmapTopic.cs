@@ -5,5 +5,6 @@ public class RoadmapTopic
     public string? Title { get; set; }
     public string? Description { get; set; }
     public int Order { get; set; }
-    public List<LearningResource> Resources { get; set; } = new List<LearningResource>();
+    public List<RoadmapConcept> Concepts { get; set; } = new();
+    public List<LearningResource> Resources { get; set; } = new();
 }

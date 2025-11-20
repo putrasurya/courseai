@@ -26,7 +26,7 @@
                 {
                     <div class="mt-3">
                         <h6>What changes would you like to suggest?</h6>
-                        <textarea @bind="userSuggestion" class="form-control" rows="3" placeholder="e.g., 'Add more about React Hooks' or 'Remove the topic on CSS Grid'"></textarea>
+                        <textarea @bind="userSuggestion" class="form-control" rows="3" placeholder="e.g., 'Add more about React Hooks' or 'Remove CSS Grid'"></textarea>
                         <button @onclick="SendRefinementRequest" class="btn btn-sm btn-success mt-2" disabled="@isRefining">
                             @if (isRefining)
                             {
@@ -68,22 +68,45 @@
 
                             @foreach (var topic in module.Topics.OrderBy(t => t.Order))
                             {
-                                <div class="card card-body bg-light mb-2 ms-3">
-                                    <h6>Topic @topic.Order: @topic.Title</h6>
-                                    <p>@topic.Description</p>
+                                <div class="card card-body bg-light mb-3 ms-3">
+                                    <h6 class="card-title">Topic @topic.Order: @topic.Title</h6>
+                                    <p class="card-text">@topic.Description</p>
                                     
+                                    @if (topic.Concepts.Any())
+                                    {
+                                        <div class="mt-3">
+                                            <strong>Key Concepts to Learn:</strong>
+                                            <ul class="list-group mt-2">
+                                                @foreach (var concept in topic.Concepts.OrderBy(c => c.Order))
+                                                {
+                                                    <li class="list-group-item">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="concept-@concept.GetHashCode()">
+                                                            <label class="form-check-label" for="concept-@concept.GetHashCode()">
+                                                                @concept.Title
+                                                            </label>
+                                                            <p class="text-muted small mb-0">@concept.Description</p>
+                                                        </div>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    }
+
                                     @if (topic.Resources.Any())
                                     {
-                                        <h6>Resources:</h6>
-                                        <ul class="list-group list-group-flush">
-                                            @foreach (var resource in topic.Resources)
-                                            {
-                                                <li class="list-group-item bg-light">
-                                                    <a href="@resource.Url" target="_blank">@resource.Title</a> (@resource.Type)
-                                                    <p class="text-muted small mb-0">@resource.Description</p>
-                                                </li>
-                                            }
-                                        </ul>
+                                        <div class="mt-3">
+                                            <strong>Recommended Resources:</strong>
+                                            <ul class="list-group list-group-flush mt-2">
+                                                @foreach (var resource in topic.Resources)
+                                                {
+                                                    <li class="list-group-item bg-light">
+                                                        <a href="@resource.Url" target="_blank">@resource.Title</a> (@resource.Type)
+                                                        <p class="text-muted small mb-0">@resource.Description</p>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
                                     }
                                 </div>
                             }
@@ -112,48 +135,55 @@
     private async Task SendRefinementRequest()
     {
         if (string.IsNullOrWhiteSpace(userSuggestion)) return;
+        if (roadmap is null) return;
 
         isRefining = true;
         showRefinementMessage = true;
         refinementMessage = "Refinement Agent is processing your request...";
         await Task.Delay(2000); // Simulate agent thinking time
 
-        // Mock agent logic
+        // Mock agent logic (targets concepts for simplicity)
         if (userSuggestion.Contains("add", StringComparison.OrdinalIgnoreCase))
         {
-            var newTopicName = $"New Topic based on '{userSuggestion}'";
-            var firstModule = roadmap?.Modules.FirstOrDefault();
-            if (firstModule != null)
+            var newConceptName = $"New Concept based on '{userSuggestion}'";
+            var firstTopic = roadmap.Modules.SelectMany(m => m.Topics).FirstOrDefault();
+            if (firstTopic != null)
             {
-                var newTopic = new RoadmapTopic
+                var newConcept = new RoadmapConcept
                 {
-                    Title = newTopicName,
-                    Description = "This topic was added based on your feedback.",
-                    Order = firstModule.Topics.Count + 1,
-                    Resources = new List<LearningResource>()
+                    Title = newConceptName,
+                    Description = "This concept was added based on your feedback.",
+                    Order = firstTopic.Concepts.Count + 1
                 };
-                firstModule.Topics.Add(newTopic);
-                refinementMessage = $"Refinement Agent: I've added the topic '{newTopicName}' to the '{firstModule.Title}' module.";
+                firstTopic.Concepts.Add(newConcept);
+                refinementMessage = $"Refinement Agent: I've added the concept '{newConceptName}' to the '{firstTopic.Title}' topic.";
             }
         }
         else if (userSuggestion.Contains("remove", StringComparison.OrdinalIgnoreCase))
         {
-            var topicToRemove = roadmap?.Modules.SelectMany(m => m.Topics).FirstOrDefault(t => userSuggestion.Contains(t.Title ?? "", StringComparison.OrdinalIgnoreCase));
-            if (topicToRemove != null)
+            var conceptToRemove = roadmap.Modules
+                .SelectMany(m => m.Topics)
+                .SelectMany(t => t.Concepts)
+                .FirstOrDefault(c => c.Title != null && userSuggestion.Contains(c.Title, StringComparison.OrdinalIgnoreCase));
+            
+            if (conceptToRemove != null)
             {
-                foreach(var module in roadmap.Modules)
+                 foreach(var module in roadmap.Modules)
                 {
-                    if (module.Topics.Contains(topicToRemove))
+                    foreach(var topic in module.Topics)
                     {
-                        module.Topics.Remove(topicToRemove);
-                        refinementMessage = $"Refinement Agent: I've removed the topic '{topicToRemove.Title}'.";
-                        break;
+                        if (topic.Concepts.Contains(conceptToRemove))
+                        {
+                            topic.Concepts.Remove(conceptToRemove);
+                            refinementMessage = $"Refinement Agent: I've removed the concept '{conceptToRemove.Title}'.";
+                            break;
+                        }
                     }
                 }
             }
             else
             {
-                refinementMessage = "Refinement Agent: I couldn't find a topic to remove based on your request.";
+                refinementMessage = "Refinement Agent: I couldn't find a concept to remove based on your request.";
             }
         }
         else
@@ -194,90 +224,47 @@
             Order = 1,
             EstimatedTimeMinutes = 900 // 15 hours
         };
-        module1.Topics.Add(new RoadmapTopic
+        
+        var topic1_1 = new RoadmapTopic
         {
             Title = "Advanced HTML5 & CSS3",
-            Description = "Deep dive into semantic HTML, accessibility, responsive design, and modern CSS techniques (Flexbox, Grid).",
+            Description = "Deep dive into semantic HTML, accessibility, responsive design, and modern CSS techniques.",
             Order = 1,
+            Concepts = new List<RoadmapConcept>
+            {
+                new RoadmapConcept { Title = "Semantic HTML", Description = "Understand and use tags like <article>, <section>, and <nav>.", Order = 1},
+                new RoadmapConcept { Title = "CSS Flexbox", Description = "Learn one-dimensional layouts.", Order = 2},
+                new RoadmapConcept { Title = "CSS Grid", Description = "Learn two-dimensional layouts.", Order = 3}
+            },
             Resources = new List<LearningResource>
             {
-                new LearningResource { Title = "MDN Web Docs: HTML", Url = "https://developer.mozilla.org/en-US/docs/Web/HTML", Type = "documentation", Source = "MDN", Description = "Comprehensive HTML reference." },
-                new LearningResource { Title = "Flexbox Froggy", Url = "https://flexboxfroggy.com/", Type = "game", Source = "PlayCanvas", Description = "Interactive game to learn Flexbox." },
-                new LearningResource { Title = "CSS Grid Garden", Url = "https://cssgridgarden.com/", Type = "game", Source = "PlayCanvas", Description = "Interactive game to learn CSS Grid." }
+                new LearningResource { Title = "MDN Web Docs: HTML", Url = "https://developer.mozilla.org/en-US/docs/Web/HTML", Type = ResourceType.Documentation, Source = "MDN", Description = "Comprehensive HTML reference." },
+                new LearningResource { Title = "Flexbox Froggy", Url = "https://flexboxfroggy.com/", Type = ResourceType.Game, Source = "PlayCanvas", Description = "Interactive game to learn Flexbox." },
+                new LearningResource { Title = "CSS Grid Garden", Url = "https://cssgridgarden.com/", Type = ResourceType.Game, Source = "PlayCanvas", Description = "Interactive game to learn CSS Grid." }
             }
-        });
-        module1.Topics.Add(new RoadmapTopic
+        };
+        module1.Topics.Add(topic1_1);
+
+        var topic1_2 = new RoadmapTopic
         {
             Title = "JavaScript Core Concepts",
             Description = "Master variables, data types, functions, control flow, DOM manipulation, and asynchronous JavaScript.",
             Order = 2,
+            Concepts = new List<RoadmapConcept>
+            {
+                new RoadmapConcept { Title = "Variables, Data Types, and Operators", Description = "The fundamentals of storing and manipulating data.", Order = 1 },
+                new RoadmapConcept { Title = "Functions and Scope", Description = "Learn to write and use functions.", Order = 2 },
+                new RoadmapConcept { Title = "DOM Manipulation", Description = "Change the structure and content of a web page.", Order = 3 },
+                new RoadmapConcept { Title = "Asynchronous JavaScript", Description = "Understand Promises and async/await.", Order = 4 }
+            },
             Resources = new List<LearningResource>
             {
-                new LearningResource { Title = "JavaScript.info", Url = "https://javascript.info/", Type = "tutorial", Source = "Ilya Kantor", Description = "Modern JavaScript tutorial." },
-                new LearningResource { Title = "Eloquent JavaScript", Url = "https://eloquentjavascript.net/", Type = "book", Source = "Marijn Haverbeke", Description = "Free online book on JavaScript programming." }
+                new LearningResource { Title = "JavaScript.info - The Modern JavaScript Tutorial", Url = "https://javascript.info/", Type = ResourceType.Tutorial, Source = "Ilya Kantor", Description = "The definitive modern JS tutorial." },
+                new LearningResource { Title = "Eloquent JavaScript", Url = "https://eloquentjavascript.net/", Type = ResourceType.Book, Source = "Marijn Haverbeke", Description = "A comprehensive book on JavaScript." }
             }
-        });
+        };
+        module1.Topics.Add(topic1_2);
         roadmap.Modules.Add(module1);
-
-        // Module 2: React Ecosystem
-        var module2 = new RoadmapModule
-        {
-            Title = "React Ecosystem",
-            Description = "Explore the React library for building dynamic single-page applications.",
-            Order = 2,
-            EstimatedTimeMinutes = 1200 // 20 hours
-        };
-        module2.Topics.Add(new RoadmapTopic
-        {
-            Title = "React Basics: Components, Props, State",
-            Description = "Understand the fundamental building blocks of React applications.",
-            Order = 1,
-            Resources = new List<LearningResource>
-            {
-                new LearningResource { Title = "React Official Tutorial", Url = "https://react.dev/learn", Type = "tutorial", Source = "React.dev", Description = "Hands-on official React tutorial." }
-            }
-        });
-        module2.Topics.Add(new RoadmapTopic
-        {
-            Title = "React Hooks & State Management",
-            Description = "Learn about useState, useEffect, useContext, and basic state management patterns.",
-            Order = 2,
-            Resources = new List<LearningResource>
-            {
-                new LearningResource { Title = "React Hooks Cheatsheet", Url = "https://react-hooks-cheatsheet.com/", Type = "documentation", Source = "Ohans Emmanuel", Description = "Quick reference for React Hooks." }
-            }
-        });
-        roadmap.Modules.Add(module2);
-
-        // Module 3: Backend with ASP.NET Core
-        var module3 = new RoadmapModule
-        {
-            Title = "Backend with ASP.NET Core",
-            Description = "Build robust and scalable APIs using C# and the .NET framework.",
-            Order = 3,
-            EstimatedTimeMinutes = 1500 // 25 hours
-        };
-        module3.Topics.Add(new RoadmapTopic
-        {
-            Title = "C# Fundamentals & OOP",
-            Description = "Refresh C# basics, delve into Object-Oriented Programming principles, and explore LINQ.",
-            Order = 1,
-            Resources = new List<LearningResource>
-            {
-                new LearningResource { Title = "C# Microsoft Docs", Url = "https://learn.microsoft.com/en-us/dotnet/csharp/", Type = "documentation", Source = "Microsoft", Description = "Official C# documentation and tutorials." }
-            }
-        });
-        module3.Topics.Add(new RoadmapTopic
-        {
-            Title = "ASP.NET Core Web API",
-            Description = "Learn to create RESTful APIs, handle requests, manage routing, and integrate with databases.",
-            Order = 2,
-            Resources = new List<LearningResource>
-            {
-                new LearningResource { Title = "Build web APIs with ASP.NET Core", Url = "https://learn.microsoft.com/en-us/aspnet/core/tutorials/web-api-javascript?view=aspnetcore-7.0", Type = "tutorial", Source = "Microsoft", Description = "Official tutorial for building web APIs." }
-            }
-        });
-        roadmap.Modules.Add(module3);
 
         return roadmap;
     }
