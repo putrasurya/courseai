@@ -1,12 +1,12 @@
-using System.ComponentModel;
 using Azure.AI.OpenAI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Options;
 using PathWeaver.Models;
+using PathWeaver.Services;
 using Azure.Identity;
 using OpenAI;
-using System.Text.Json;
 using Microsoft.Extensions.AI;
+using System.ComponentModel;
 
 namespace PathWeaver.Agents
 {
@@ -36,18 +36,13 @@ namespace PathWeaver.Agents
             Always maintain context of what you've already learned and avoid asking the same questions repeatedly.
             """;
 
-        public IList<AITool>? Tools { get; }
+        public IList<AITool> Tools { get; } = [];
 
-        private string _currentUserProfileJson = string.Empty;
+        private readonly UserProfileService _userProfileService;
 
-        public PlannerAgent(IOptions<AzureOpenAIOptions> options)
+        public PlannerAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService)
         {
-            Tools  =
-            [
-                AIFunctionFactory.Create(GetCurrentUserProfile),
-                AIFunctionFactory.Create(UpdateUserProfile),
-                AIFunctionFactory.Create(RemoveFromUserProfile),
-            ];
+            _userProfileService = userProfileService;
             
             var azureOptions = options.Value;
             Agent = new AzureOpenAIClient(
@@ -57,46 +52,49 @@ namespace PathWeaver.Agents
                     .CreateAIAgent(
                         name: Name,
                         instructions: SystemMessage,
-                        tools: Tools
+                        tools: [
+                            AIFunctionFactory.Create(UpdateUserProfile),
+                            AIFunctionFactory.Create(RemoveFromUserProfile),
+                            AIFunctionFactory.Create(GetUserProfileSummary)
+                        ]
                     );
         }
 
         public async Task<string> Invoke(string input)
         {
-            var contextualInput = string.IsNullOrEmpty(_currentUserProfileJson) 
+            var profileSummary = _userProfileService.GetProfileSummary();
+            var contextualInput = string.IsNullOrEmpty(profileSummary) || profileSummary == "No user profile available." 
                 ? input 
-                : $"Current User Profile Context: {UserProfileTool.GetUserProfileSummary(_currentUserProfileJson)}\n\nUser Input: {input}";
+                : $"Current User Profile Context: {profileSummary}\n\nUser Input: {input}";
             
             var response = await Agent.RunAsync(contextualInput, Thread);
             return response.ToString();
         }
 
-        [Description("Get the current user profile")]
         public UserProfile? GetCurrentUserProfile()
         {
-            if (string.IsNullOrEmpty(_currentUserProfileJson))
-                return null;
-            
-            return JsonSerializer.Deserialize<UserProfile>(_currentUserProfileJson);
+            return _userProfileService.CurrentProfile;
         }
 
+        // Tool functions that the AI can call
         [Description("Update a field in the user profile with a value")]
         private string UpdateUserProfile(string field, string value)
         {
-            _currentUserProfileJson = UserProfileTool.UpdateUserProfile(_currentUserProfileJson, field, value);
+            _userProfileService.UpdateProfile(field, value);
             return $"Updated {field} with: {value}";
         }
 
         [Description("Remove an item from a user profile list field")]
         private string RemoveFromUserProfile(string field, string value)
         {
-            _currentUserProfileJson = UserProfileTool.RemoveFromUserProfile(_currentUserProfileJson, field, value);
+            _userProfileService.RemoveFromProfile(field, value);
             return $"Removed {value} from {field}";
         }
 
+        [Description("Get a summary of the current user profile")]
         private string GetUserProfileSummary()
         {
-            return UserProfileTool.GetUserProfileSummary(_currentUserProfileJson);
+            return _userProfileService.GetProfileSummary();
         }
     }
 }

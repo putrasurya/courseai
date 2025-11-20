@@ -19,6 +19,7 @@ builder.Services.Configure<AzureOpenAIOptions>(
 
 // Register application services
 builder.Services.AddScoped<RoadmapStateService>();
+builder.Services.AddSingleton<UserProfileService>();
 
 builder.Services.AddSingleton<IPlannerAgent, PlannerAgent>();
 builder.Services.AddSingleton<IResearchAgent, ResearchAgent>();

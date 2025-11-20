@@ -2,6 +2,7 @@ using Azure.AI.OpenAI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Options;
 using PathWeaver.Models;
+using PathWeaver.Services;
 using Azure.Identity;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -14,10 +15,14 @@ namespace PathWeaver.Agents
         public AIAgent Agent { get; init; }
         public string Name => "RefinementAgent";
         public string SystemMessage => "You are a refinement agent responsible for updating and modifying a roadmap based on user feedback.";
-        public IList<AITool> Tools { get; }
+        public IList<AITool> Tools { get; } = [];
 
-        public RefinementAgent(IOptions<AzureOpenAIOptions> options)
+        private readonly UserProfileService _userProfileService;
+
+        public RefinementAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService)
         {
+            _userProfileService = userProfileService;
+            
             var azureOptions = options.Value;
             Agent = new AzureOpenAIClient(
                 new Uri(azureOptions.Endpoint),

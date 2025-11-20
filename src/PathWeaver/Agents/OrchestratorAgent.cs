@@ -2,6 +2,7 @@ using Azure.AI.OpenAI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Options;
 using PathWeaver.Models;
+using PathWeaver.Services;
 using Azure.Identity;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -36,24 +37,27 @@ namespace PathWeaver.Agents
             - When profile is complete: Include the phrase "profile is complete" in your response
             - Always maintain a conversational and helpful tone
             """;
-        public IList<AITool> Tools { get; }
+        public IList<AITool> Tools { get; } = [];
 
         private readonly IPlannerAgent _plannerAgent;
         private readonly IResearchAgent _researchAgent;
         private readonly IStructuringAgent _structuringAgent;
         private readonly IRefinementAgent _refinementAgent;
+        private readonly UserProfileService _userProfileService;
 
         public OrchestratorAgent(
             IOptions<AzureOpenAIOptions> options,
             IPlannerAgent plannerAgent,
             IResearchAgent researchAgent, 
             IStructuringAgent structuringAgent,
-            IRefinementAgent refinementAgent)
+            IRefinementAgent refinementAgent,
+            UserProfileService userProfileService)
         {
             _plannerAgent = plannerAgent;
             _researchAgent = researchAgent;
             _structuringAgent = structuringAgent;
             _refinementAgent = refinementAgent;
+            _userProfileService = userProfileService;
             
             var azureOptions = options.Value;
             Agent = new AzureOpenAIClient(
@@ -80,9 +84,8 @@ namespace PathWeaver.Agents
                 // Continue existing conversation thread
                 var plannerResponse = await _plannerAgent.Invoke(input);
                 
-                // Check if the user profile is complete
-                var currentProfile = _plannerAgent.GetCurrentUserProfile();
-                if (IsProfileSufficient(currentProfile))
+                // Check if the user profile is complete using the service
+                if (_userProfileService.IsProfileSufficient())
                 {
                     return plannerResponse + "\n\nGreat! I have enough information about your learning goals and background. Your profile is complete and I'm ready to create your personalized learning roadmap. Click the 'Generate My Learning Roadmap' button when you're ready to proceed!";
                 }
@@ -102,23 +105,15 @@ namespace PathWeaver.Agents
             return _plannerAgent.Invoke(learningGoal);
         }
 
-        private bool IsProfileSufficient(UserProfile? profile)
-        {
-            return profile != null &&
-                   !string.IsNullOrWhiteSpace(profile.LearningGoal) &&
-                   !string.IsNullOrWhiteSpace(profile.ExperienceLevel) &&
-                   (profile.KnownSkills?.Count > 0 || profile.PreferredLearningStyles?.Count > 0);
-        }
-
         public async Task<Roadmap> GenerateRoadmap()
         {
-            // Use the profile that was already gathered during the conversation
-            var userProfile = _plannerAgent.GetCurrentUserProfile();
-            
-            if (userProfile == null || !IsProfileSufficient(userProfile))
+            // Use the profile from the centralized service
+            if (!_userProfileService.IsProfileSufficient())
             {
                 throw new InvalidOperationException("User profile is not sufficiently complete. Please complete the planning conversation first.");
             }
+
+            var userProfile = _userProfileService.GetProfileCopy();
 
             // Phase 2: Research resources
             var knownSkillsText = string.Join(", ", userProfile.KnownSkills.Where(s => !string.IsNullOrEmpty(s)));

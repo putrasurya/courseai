@@ -2,6 +2,7 @@ using Azure.AI.OpenAI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Options;
 using PathWeaver.Models;
+using PathWeaver.Services;
 using Azure.Identity;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -14,10 +15,14 @@ namespace PathWeaver.Agents
         public AIAgent Agent { get; init; }
         public string Name => "StructuringAgent";
         public string SystemMessage => "You are a structuring agent responsible for organizing learning resources into a logical roadmap with modules and topics.";
-        public IList<AITool> Tools { get; }
+        public IList<AITool> Tools { get; } = [];
 
-        public StructuringAgent(IOptions<AzureOpenAIOptions> options)
+        private readonly UserProfileService _userProfileService;
+
+        public StructuringAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService)
         {
+            _userProfileService = userProfileService;
+            
             var azureOptions = options.Value;
             Agent = new AzureOpenAIClient(
                 new Uri(azureOptions.Endpoint),

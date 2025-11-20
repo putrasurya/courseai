@@ -2,6 +2,7 @@ using Azure.AI.OpenAI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Options;
 using PathWeaver.Models;
+using PathWeaver.Services;
 using Azure.Identity;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -14,10 +15,14 @@ namespace PathWeaver.Agents
         public AIAgent Agent { get; init; }
         public string Name => "ResearchAgent";
         public string SystemMessage => "You are a research agent responsible for finding and curating learning resources based on a user's profile and learning goals.";
-        public IList<AITool> Tools { get; }
+        public IList<AITool> Tools { get; } = [];
 
-        public ResearchAgent(IOptions<AzureOpenAIOptions> options)
+        private readonly UserProfileService _userProfileService;
+
+        public ResearchAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService)
         {
+            _userProfileService = userProfileService;
+            
             var azureOptions = options.Value;
             Agent = new AzureOpenAIClient(
                 new Uri(azureOptions.Endpoint),
