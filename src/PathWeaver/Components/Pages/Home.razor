@@ -1,7 +1,93 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@inject IOrchestratorAgent Orchestrator
+@inject NavigationManager NavManager
 
-<PageTitle>Home</PageTitle>
+@using System.Text
+@using System.Threading.Tasks
+@using PathWeaver.Agents
 
-<h1>Hello, world!</h1>
+<PageTitle>PathWeaver - Your AI Learning Navigator</PageTitle>
 
-Welcome to your new app.
+<div class="container mt-4">
+    <div class="text-center mb-4">
+        <h1>PathWeaver</h1>
+        <p class="lead">Your personal AI-powered guide to creating learning roadmaps.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">What do you want to learn?</h5>
+                    <p class="card-text">Describe your learning goal, and our AI agents will craft a personalized roadmap for you.</p>
+                    
+                    <div class="mb-3">
+                        <textarea @bind="learningGoal" class="form-control" rows="4" placeholder="e.g., 'I want to become a full-stack web developer, starting with basic HTML and CSS, and moving to modern JavaScript frameworks and backend development.'"></textarea>
+                    </div>
+
+                    <div class="text-end">
+                        <button @onclick="StartPlanning" class="btn btn-primary" disabled="@isPlanning">
+                            @if (isPlanning)
+                            {
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span class="sr-only">Loading...</span>
+                                <span> Planning...</span>
+                            }
+                            else
+                            {
+                                <span>Start Planning</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-8 mx-auto">
+            <div id="agent-chat-interface" class="mt-4">
+                @if (!string.IsNullOrEmpty(agentResponse))
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            Agent Response
+                        </div>
+                        <div class="card-body">
+                            <p>@agentResponse</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string learningGoal = "";
+    private string agentResponse = "";
+    private bool isPlanning = false;
+
+    private async Task StartPlanning()
+    {
+        if (string.IsNullOrWhiteSpace(learningGoal))
+        {
+            agentResponse = "Please enter a learning goal to begin.";
+            return;
+        }
+
+        isPlanning = true;
+        agentResponse = "Contacting the AI planning agent...";
+
+        // In a real scenario, the response from the Orchestrator might be a confirmation
+        // or an initial set of questions. For now, it just triggers navigation.
+        string orchestratorResult = await Orchestrator.StartPlanning(learningGoal);
+        // The orchestratorResult (agentResponse) can be displayed before navigation if needed.
+        // For now, we assume a successful start means we navigate to the roadmap view.
+        
+        NavManager.NavigateTo("/roadmap");
+
+        isPlanning = false;
+    }
+}

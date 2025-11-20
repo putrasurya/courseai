@@ -1,0 +1,245 @@
+@page "/roadmap"
+@rendermode InteractiveServer
+
+<PageTitle>PathWeaver - Your Learning Roadmap</PageTitle>
+
+<div class="container mt-4">
+    @if (roadmap == null)
+    {
+        <p>Loading roadmap...</p>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Learning Goal: @roadmap.UserProfile.LearningGoal</h5>
+                <p class="card-text">Status: @roadmap.Status</p>
+                <!-- Placeholder for refinement controls -->
+                <button class="btn btn-sm btn-outline-primary me-2">Suggest Changes</button>
+                <button class="btn btn-sm btn-outline-secondary">Save/Export</button>
+            </div>
+        </div>
+
+        @foreach (var module in roadmap.Modules.OrderBy(m => m.Order))
+        {
+            <div class="accordion mb-2" id="@($"moduleAccordion{module.Order}")">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="@($"heading{module.Order}")">
+                        <button class="accordion-button @(module.Order == 1 ? "" : "collapsed")" type="button" data-bs-toggle="collapse" data-bs-target="@($"#collapse{module.Order}")" aria-expanded="@(module.Order == 1 ? "true" : "false")" aria-controls="@($"collapse{module.Order}")">
+                            Module @module.Order: @module.Title
+                        </button>
+                    </h2>
+                    <div id="@($"collapse{module.Order}")" class="accordion-collapse collapse @(module.Order == 1 ? "show" : "")" aria-labelledby="@($"heading{module.Order}")" data-bs-parent="@($"#moduleAccordion{module.Order}")">
+                        <div class="accordion-body">
+                            <p>@module.Description</p>
+                            <p class="text-muted">Estimated Time: @module.EstimatedTimeMinutes minutes</p>
+
+                            @foreach (var topic in module.Topics.OrderBy(t => t.Order))
+                            {
+                                <div class="card card-body bg-light mb-2 ms-3">
+                                    <h6>Topic @topic.Order: @topic.Title</h6>
+                                    <p>@topic.Description</p>
+                                    
+                                    @if (topic.Resources.Any())
+                                    {
+                                        <h6>Resources:</h6>
+                                        <ul class="list-group list-group-flush">
+                                            @foreach (var resource in topic.Resources)
+                                            {
+                                                <li class="list-group-item bg-light">
+                                                    <a href="@resource.Url" target="_blank">@resource.Title</a> (@resource.Type)
+                                                    <p class="text-muted small mb-0">@resource.Description</p>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private Roadmap roadmap;
+
+    protected override void OnInitialized()
+    {
+        // Generate mock roadmap data
+        roadmap = GenerateMockRoadmap();
+    }
+
+    private Roadmap GenerateMockRoadmap()
+    {
+        var userProfile = new UserProfile
+        {
+            LearningGoal = "Become a full-stack web developer with C#/.NET and React",
+            KnownSkills = new List<string> { "Basic HTML", "Basic CSS" },
+            PreferredLearningStyles = new List<string> { "hands-on", "project-based" },
+            ExperienceLevel = "intermediate"
+        };
+
+        var roadmap = new Roadmap
+        {
+            Id = Guid.NewGuid(),
+            UserProfile = userProfile,
+            CreatedDate = DateTime.Now,
+            LastModifiedDate = DateTime.Now,
+            Status = RoadmapStatus.Draft
+        };
+
+        // Module 1: Frontend Fundamentals
+        var module1 = new RoadmapModule
+        {
+            Title = "Frontend Fundamentals",
+            Description = "Learn the core technologies for building interactive user interfaces on the web.",
+            Order = 1,
+            EstimatedTimeMinutes = 900 // 15 hours
+        };
+        module1.Topics.Add(new RoadmapTopic
+        {
+            Title = "Advanced HTML5 & CSS3",
+            Description = "Deep dive into semantic HTML, accessibility, responsive design, and modern CSS techniques (Flexbox, Grid).",
+            Order = 1,
+            Resources = new List<LearningResource>
+            {
+                new LearningResource { Title = "MDN Web Docs: HTML", Url = "https://developer.mozilla.org/en-US/docs/Web/HTML", Type = "documentation", Source = "MDN", Description = "Comprehensive HTML reference." },
+                new LearningResource { Title = "Flexbox Froggy", Url = "https://flexboxfroggy.com/", Type = "game", Source = "PlayCanvas", Description = "Interactive game to learn Flexbox." },
+                new LearningResource { Title = "CSS Grid Garden", Url = "https://cssgridgarden.com/", Type = "game", Source = "PlayCanvas", Description = "Interactive game to learn CSS Grid." }
+            }
+        });
+        module1.Topics.Add(new RoadmapTopic
+        {
+            Title = "JavaScript Core Concepts",
+            Description = "Master variables, data types, functions, control flow, DOM manipulation, and asynchronous JavaScript.",
+            Order = 2,
+            Resources = new List<LearningResource>
+            {
+                new LearningResource { Title = "JavaScript.info", Url = "https://javascript.info/", Type = "tutorial", Source = "Ilya Kantor", Description = "Modern JavaScript tutorial." },
+                new LearningResource { Title = "Eloquent JavaScript", Url = "https://eloquentjavascript.net/", Type = "book", Source = "Marijn Haverbeke", Description = "Free online book on JavaScript programming." }
+            }
+        });
+        roadmap.Modules.Add(module1);
+
+        // Module 2: React Ecosystem
+        var module2 = new RoadmapModule
+        {
+            Title = "React Ecosystem",
+            Description = "Explore the React library for building dynamic single-page applications.",
+            Order = 2,
+            EstimatedTimeMinutes = 1200 // 20 hours
+        };
+        module2.Topics.Add(new RoadmapTopic
+        {
+            Title = "React Basics: Components, Props, State",
+            Description = "Understand the fundamental building blocks of React applications.",
+            Order = 1,
+            Resources = new List<LearningResource>
+            {
+                new LearningResource { Title = "React Official Tutorial", Url = "https://react.dev/learn", Type = "tutorial", Source = "React.dev", Description = "Hands-on official React tutorial." }
+            }
+        });
+        module2.Topics.Add(new RoadmapTopic
+        {
+            Title = "React Hooks & State Management",
+            Description = "Learn about useState, useEffect, useContext, and basic state management patterns.",
+            Order = 2,
+            Resources = new List<LearningResource>
+            {
+                new LearningResource { Title = "React Hooks Cheatsheet", Url = "https://react-hooks-cheatsheet.com/", Type = "documentation", Source = "Ohans Emmanuel", Description = "Quick reference for React Hooks." }
+            }
+        });
+        roadmap.Modules.Add(module2);
+
+        // Module 3: Backend with ASP.NET Core
+        var module3 = new RoadmapModule
+        {
+            Title = "Backend with ASP.NET Core",
+            Description = "Build robust and scalable APIs using C# and the .NET framework.",
+            Order = 3,
+            EstimatedTimeMinutes = 1500 // 25 hours
+        };
+        module3.Topics.Add(new RoadmapTopic
+        {
+            Title = "C# Fundamentals & OOP",
+            Description = "Refresh C# basics, delve into Object-Oriented Programming principles, and explore LINQ.",
+            Order = 1,
+            Resources = new List<LearningResource>
+            {
+                new LearningResource { Title = "C# Microsoft Docs", Url = "https://learn.microsoft.com/en-us/dotnet/csharp/", Type = "documentation", Source = "Microsoft", Description = "Official C# documentation and tutorials." }
+            }
+        });
+        module3.Topics.Add(new RoadmapTopic
+        {
+            Title = "ASP.NET Core Web API",
+            Description = "Learn to create RESTful APIs, handle requests, manage routing, and integrate with databases.",
+            Order = 2,
+            Resources = new List<LearningResource>
+            {
+                new LearningResource { Title = "Build web APIs with ASP.NET Core", Url = "https://learn.microsoft.com/en-us/aspnet/core/tutorials/web-api-javascript?view=aspnetcore-7.0", Type = "tutorial", Source = "Microsoft", Description = "Official tutorial for building web APIs." }
+            }
+        });
+        roadmap.Modules.Add(module3);
+
+        return roadmap;
+    }
+
+    // Conceptual Data Structures (will be moved to proper models later)
+    public class Roadmap
+    {
+        public Guid Id { get; set; }
+        public UserProfile UserProfile { get; set; }
+        public List<RoadmapModule> Modules { get; set; } = new List<RoadmapModule>();
+        public List<LearningResource> SuggestedResources { get; set; } = new List<LearningResource>();
+        public DateTime CreatedDate { get; set; }
+        public DateTime LastModifiedDate { get; set; }
+        public RoadmapStatus Status { get; set; }
+    }
+
+    public class UserProfile
+    {
+        public string LearningGoal { get; set; }
+        public List<string> KnownSkills { get; set; }
+        public List<string> PreferredLearningStyles { get; set; }
+        public string ExperienceLevel { get; set; }
+    }
+
+    public class RoadmapModule
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int Order { get; set; }
+        public int EstimatedTimeMinutes { get; set; }
+        public List<RoadmapTopic> Topics { get; set; } = new List<RoadmapTopic>();
+    }
+
+    public class RoadmapTopic
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public int Order { get; set; }
+        public List<LearningResource> Resources { get; set; } = new List<LearningResource>();
+    }
+
+    public class LearningResource
+    {
+        public string Title { get; set; }
+        public string Url { get; set; }
+        public string Type { get; set; }
+        public string Source { get; set; }
+        public string Description { get; set; }
+        public int EstimatedTimeMinutes { get; set; }
+        public double RelevanceScore { get; set; }
+    }
+
+    public enum RoadmapStatus
+    {
+        Draft,
+        AwaitingFeedback,
+        Approved,
+        Active
+    }
+}
