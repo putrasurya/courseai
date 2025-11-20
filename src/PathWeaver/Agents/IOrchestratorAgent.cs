@@ -1,3 +1,5 @@
+using PathWeaver.Models;
+
 namespace PathWeaver.Agents
 {
     public interface IOrchestratorAgent : IAgent

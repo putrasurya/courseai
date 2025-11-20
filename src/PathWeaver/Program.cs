@@ -1,13 +1,25 @@
 using PathWeaver.Agents;
 using PathWeaver.Components;
+using PathWeaver.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents()
+    .AddCircuitOptions(options =>
+    {
+        options.DetailedErrors = true;
+    });
+
+// Configure Azure OpenAI options
+builder.Services.Configure<AzureOpenAIOptions>(
+    builder.Configuration.GetSection(AzureOpenAIOptions.SectionName));
 
 builder.Services.AddSingleton<IPlannerAgent, PlannerAgent>();
+builder.Services.AddSingleton<IResearchAgent, ResearchAgent>();
+builder.Services.AddSingleton<IStructuringAgent, StructuringAgent>();
+builder.Services.AddSingleton<IRefinementAgent, RefinementAgent>();
 builder.Services.AddSingleton<IOrchestratorAgent, OrchestratorAgent>();
 
 var app = builder.Build();
