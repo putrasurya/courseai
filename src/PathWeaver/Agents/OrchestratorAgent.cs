@@ -109,6 +109,49 @@ namespace PathWeaver.Agents
                    !string.IsNullOrWhiteSpace(profile.ExperienceLevel) &&
                    (profile.KnownSkills?.Count > 0 || profile.PreferredLearningStyles?.Count > 0);
         }
+
+        public async Task<Roadmap> GenerateRoadmap()
+        {
+            // Use the profile that was already gathered during the conversation
+            var userProfile = _plannerAgent.GetCurrentUserProfile();
+            
+            if (userProfile == null || !IsProfileSufficient(userProfile))
+            {
+                throw new InvalidOperationException("User profile is not sufficiently complete. Please complete the planning conversation first.");
+            }
+
+            // Phase 2: Research resources
+            var knownSkillsText = string.Join(", ", userProfile.KnownSkills.Where(s => !string.IsNullOrEmpty(s)));
+            var preferencesText = string.Join(", ", userProfile.PreferredLearningStyles.Where(s => !string.IsNullOrEmpty(s)));
+            var researchInput = $"Learning Goal: {userProfile.LearningGoal}, Experience: {userProfile.ExperienceLevel}, Known Skills: {knownSkillsText}, Learning Preferences: {preferencesText}";
+            var researchResult = await _researchAgent.Invoke(researchInput);
+
+            // Phase 3: Structure the roadmap
+            var structuringInput = $"User Profile: {System.Text.Json.JsonSerializer.Serialize(userProfile)}\nResearch Results: {researchResult}";
+            var structuredResult = await _structuringAgent.Invoke(structuringInput);
+
+            // Create and return the roadmap
+            return new Roadmap
+            {
+                Id = Guid.NewGuid(),
+                UserProfile = userProfile,
+                CreatedDate = DateTime.UtcNow,
+                LastModifiedDate = DateTime.UtcNow,
+                Status = RoadmapStatus.Draft,
+                // TODO: Parse structured result into modules
+                Modules = new List<RoadmapModule>()
+            };
+        }
+
+        public async Task<Roadmap> RefineRoadmap(Roadmap roadmap, string userFeedback)
+        {
+            var refinementInput = $"Current Roadmap: {System.Text.Json.JsonSerializer.Serialize(roadmap)}\nUser Feedback: {userFeedback}";
+            var refinedResult = await _refinementAgent.Invoke(refinementInput);
+            
+            // TODO: Parse refined result and update roadmap
+            roadmap.LastModifiedDate = DateTime.UtcNow;
+            return roadmap;
+        }
     }
 }
 

@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject IOrchestratorAgent Orchestrator
 @inject NavigationManager NavManager
+@inject PathWeaver.Services.RoadmapStateService RoadmapState
 
 @using System.Text
 @using System.Threading.Tasks
@@ -90,15 +91,19 @@
                         @if (isProfileComplete)
                         {
                             <div class="mt-3 text-center">
-                                <button @onclick="GenerateRoadmap" class="btn btn-success" disabled="@isGeneratingRoadmap">
+                                <div class="alert alert-success mb-3" role="alert">
+                                    <i class="bi bi-check-circle"></i> Your profile is ready! You can now generate your personalized learning roadmap.
+                                </div>
+                                <button @onclick="GenerateRoadmap" class="btn btn-success btn-lg" disabled="@isGeneratingRoadmap">
                                     @if (isGeneratingRoadmap)
                                     {
-                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                        <span> Generating Roadmap...</span>
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        <span>Generating Roadmap...</span>
                                     }
                                     else
                                     {
-                                        <span>✓ Generate My Learning Roadmap</span>
+                                        <i class="bi bi-map"></i>
+                                        <span> Generate My Learning Roadmap</span>
                                     }
                                 </button>
                             </div>
@@ -251,12 +256,13 @@
 
     private void CheckIfProfileComplete(string agentResponse)
     {
-        // Simple heuristic to detect when profile gathering is complete
-        // In a real implementation, this could check with the PlannerAgent
-        // or look for specific keywords/patterns
+        // Enhanced heuristic to detect when profile gathering is complete
         if (agentResponse.Contains("profile is complete", StringComparison.OrdinalIgnoreCase) ||
             agentResponse.Contains("ready to create", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("sufficient information", StringComparison.OrdinalIgnoreCase))
+            agentResponse.Contains("sufficient information", StringComparison.OrdinalIgnoreCase) ||
+            agentResponse.Contains("ready to proceed", StringComparison.OrdinalIgnoreCase) ||
+            agentResponse.Contains("generate your roadmap", StringComparison.OrdinalIgnoreCase) ||
+            agentResponse.Contains("learning roadmap", StringComparison.OrdinalIgnoreCase))
         {
             isProfileComplete = true;
         }
@@ -268,15 +274,38 @@
 
         try
         {
-            // var roadmap = await Orchestrator.GenerateRoadmap(learningGoal);
-            // Navigate to roadmap view with the generated roadmap
-            // NavManager.NavigateTo("/roadmap");
+            conversationHistory.Add(new ConversationMessage
+            {
+                Content = "📋 Starting roadmap generation using your complete profile...",
+                IsFromUser = false
+            });
+            StateHasChanged();
+
+            // Generate roadmap using the complete UserProfile gathered through conversation
+            // The orchestrator will use all the information collected (learning goals, experience, skills, preferences)
+            var roadmap = await Orchestrator.GenerateRoadmap();
+            
+            // Store the roadmap in the state service
+            RoadmapState.SetRoadmap(roadmap);
+            
+            conversationHistory.Add(new ConversationMessage
+            {
+                Content = "🎉 Your personalized learning roadmap has been successfully generated based on your goals, experience level, skills, and learning preferences! Redirecting you to view your roadmap...",
+                IsFromUser = false
+            });
+            StateHasChanged();
+
+            // Small delay to show the success message
+            await Task.Delay(2000);
+            
+            // Navigate to roadmap view
+            NavManager.NavigateTo("/roadmap");
         }
         catch (Exception ex)
         {
             conversationHistory.Add(new ConversationMessage
             {
-                Content = $"Error generating roadmap: {ex.Message}",
+                Content = $"Sorry, there was an error generating your roadmap: {ex.Message}. Please try again or continue our conversation to refine your profile.",
                 IsFromUser = false
             });
         }

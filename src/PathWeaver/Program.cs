@@ -1,6 +1,7 @@
 using PathWeaver.Agents;
 using PathWeaver.Components;
 using PathWeaver.Models;
+using PathWeaver.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,9 @@ builder.Services.AddRazorComponents()
 // Configure Azure OpenAI options
 builder.Services.Configure<AzureOpenAIOptions>(
     builder.Configuration.GetSection(AzureOpenAIOptions.SectionName));
+
+// Register application services
+builder.Services.AddScoped<RoadmapStateService>();
 
 builder.Services.AddSingleton<IPlannerAgent, PlannerAgent>();
 builder.Services.AddSingleton<IResearchAgent, ResearchAgent>();

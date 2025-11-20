@@ -1,7 +1,9 @@
 @page "/roadmap"
 @rendermode InteractiveServer
+@inject PathWeaver.Services.RoadmapStateService RoadmapState
 @using PathWeaver.Models
 @using System.Linq
+@implements IDisposable
 
 <PageTitle>PathWeaver - Your Learning Roadmap</PageTitle>
 
@@ -148,8 +150,28 @@
 
     protected override void OnInitialized()
     {
-        // Generate mock roadmap data
-        roadmap = GenerateMockRoadmap();
+        // Get roadmap from state service
+        roadmap = RoadmapState.CurrentRoadmap;
+        
+        // If no roadmap is available, generate mock data for now
+        if (roadmap == null)
+        {
+            roadmap = GenerateMockRoadmap();
+        }
+        
+        // Subscribe to roadmap changes
+        RoadmapState.RoadmapChanged += OnRoadmapChanged;
+    }
+    
+    private void OnRoadmapChanged()
+    {
+        roadmap = RoadmapState.CurrentRoadmap;
+        InvokeAsync(StateHasChanged);
+    }
+    
+    public void Dispose()
+    {
+        RoadmapState.RoadmapChanged -= OnRoadmapChanged;
     }
     
     private async Task StartQuiz(RoadmapTopic topic)
