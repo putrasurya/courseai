@@ -2,7 +2,7 @@
 @rendermode InteractiveServer
 @inject IOrchestratorAgent Orchestrator
 @inject NavigationManager NavManager
-@inject PathWeaver.Services.RoadmapStateService RoadmapState
+@inject PathWeaver.Services.RoadmapService RoadmapService
 
 @using System.Text
 @using System.Threading.Tasks
@@ -231,19 +231,26 @@
                 Content = learningGoal,
                 IsFromUser = true
             });
+            StateHasChanged();
 
-            // Start the planning conversation
-            string orchestratorResult = await Orchestrator.StartPlanning(learningGoal);
-            
-            // Add agent response
-            conversationHistory.Add(new ConversationMessage
+            // Add placeholder for agent response
+            var agentMessage = new ConversationMessage
             {
-                Content = orchestratorResult,
+                Content = "",
                 IsFromUser = false
-            });
+            };
+            conversationHistory.Add(agentMessage);
+
+            // Stream the agent response
+            await foreach (var chunk in Orchestrator.StartPlanningStreaming(learningGoal))
+            {
+                agentMessage.Content += chunk;
+                StateHasChanged();
+                await Task.Delay(50); // Small delay for smooth streaming effect
+            }
 
             // Check if the response indicates the profile is complete
-            CheckIfProfileComplete(orchestratorResult);
+            CheckIfProfileComplete(agentMessage.Content);
         }
         catch (Exception ex)
         {
@@ -275,22 +282,29 @@
                 Content = userResponse,
                 IsFromUser = true
             });
+            StateHasChanged();
 
             string currentResponse = userResponse;
             userResponse = ""; // Clear input
 
-            // Send to orchestrator for continued conversation
-            string agentResponse = await Orchestrator.Invoke(currentResponse);
-
-            // Add agent response
-            conversationHistory.Add(new ConversationMessage
+            // Add placeholder for agent response
+            var agentMessage = new ConversationMessage
             {
-                Content = agentResponse,
+                Content = "",
                 IsFromUser = false
-            });
+            };
+            conversationHistory.Add(agentMessage);
+
+            // Stream the agent response
+            await foreach (var chunk in Orchestrator.InvokeStreaming(currentResponse))
+            {
+                agentMessage.Content += chunk;
+                StateHasChanged();
+                await Task.Delay(50); // Small delay for smooth streaming effect
+            }
 
             // Check if the response indicates the profile is complete
-            CheckIfProfileComplete(agentResponse);
+            CheckIfProfileComplete(agentMessage.Content);
         }
         catch (Exception ex)
         {

@@ -26,7 +26,6 @@ builder.Services.Configure<AzureOpenAIOptions>(
 builder.Services.AddSingleton<InstrumentChatClient>();
 
 // Register application services
-builder.Services.AddSingleton<RoadmapStateService>();
 builder.Services.AddSingleton<UserProfileService>();
 builder.Services.AddSingleton<UserProfileToolsService>();
 builder.Services.AddSingleton<RoadmapService>();

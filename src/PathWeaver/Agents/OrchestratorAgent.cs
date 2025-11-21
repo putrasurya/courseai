@@ -67,7 +67,7 @@ namespace PathWeaver.Agents
         private readonly IStructuringAgent _structuringAgent;
         private readonly IRefinementAgent _refinementAgent;
         private readonly UserProfileService _userProfileService;
-        private readonly RoadmapStateService _roadmapStateService;
+        private readonly RoadmapService _roadmapService;
         private readonly UserProfileToolsService _userProfileToolsService;
 
         public OrchestratorAgent(
@@ -76,14 +76,14 @@ namespace PathWeaver.Agents
             IStructuringAgent structuringAgent,
             IRefinementAgent refinementAgent,
             UserProfileService userProfileService,
-            RoadmapStateService roadmapStateService,
+            RoadmapService roadmapService,
             UserProfileToolsService userProfileToolsService)
         {
             _plannerAgent = plannerAgent;
             _structuringAgent = structuringAgent;
             _refinementAgent = refinementAgent;
             _userProfileService = userProfileService;
-            _roadmapStateService = roadmapStateService;
+            _roadmapService = roadmapService;
             _userProfileToolsService = userProfileToolsService;
 
             var orchestratorTools = new List<AIFunction>
@@ -119,17 +119,34 @@ namespace PathWeaver.Agents
             }
         }
 
+        public async IAsyncEnumerable<string> InvokeStreaming(string input)
+        {
+            await foreach (var chunk in Agent.RunStreamingAsync(input, Thread))
+            {
+                if (!string.IsNullOrEmpty(chunk.ToString()))
+                {
+                    yield return chunk.ToString();
+                }
+            }
+        }
+
         public Task<string> StartPlanning(string learningGoal)
         {
             Thread = Agent.GetNewThread();
             return Invoke(learningGoal);
         }
 
+        public IAsyncEnumerable<string> StartPlanningStreaming(string learningGoal)
+        {
+            Thread = Agent.GetNewThread();
+            return InvokeStreaming(learningGoal);
+        }
+
         // AI Functions for the orchestrator to use
         [Description("Check if a roadmap exists for the current user")]
         public string CheckRoadmapStatus()
         {
-            var roadmap = _roadmapStateService.CurrentRoadmap;
+            var roadmap = _roadmapService.GetRoadMap();
             if (roadmap == null)
             {
                 return "No roadmap exists currently.";
