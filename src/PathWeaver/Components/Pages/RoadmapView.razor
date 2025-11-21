@@ -1,16 +1,18 @@
 @page "/roadmap"
 @rendermode InteractiveServer
-@inject PathWeaver.Services.RoadmapStateService RoadmapState
+@inject PathWeaver.Services.RoadmapService RoadmapService
 @using PathWeaver.Models
 @using System.Linq
-@implements IDisposable
 
 <PageTitle>PathWeaver - Your Learning Roadmap</PageTitle>
 
 <div class="container mt-4">
     @if (roadmap == null)
     {
-        <p>Loading roadmap...</p>
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">No roadmap available!</h4>
+            <p>It looks like you haven't created a roadmap yet. Please go back to the <a href="/" class="alert-link">home page</a> to start building your learning roadmap.</p>
+        </div>
     }
     else
     {
@@ -165,28 +167,8 @@
 
     protected override void OnInitialized()
     {
-        // Get roadmap from state service
-        roadmap = RoadmapState.CurrentRoadmap;
-        
-        // If no roadmap is available, generate mock data for now
-        if (roadmap == null)
-        {
-            roadmap = GenerateMockRoadmap();
-        }
-        
-        // Subscribe to roadmap changes
-        RoadmapState.RoadmapChanged += OnRoadmapChanged;
-    }
-    
-    private void OnRoadmapChanged()
-    {
-        roadmap = RoadmapState.CurrentRoadmap;
-        InvokeAsync(StateHasChanged);
-    }
-    
-    public void Dispose()
-    {
-        RoadmapState.RoadmapChanged -= OnRoadmapChanged;
+        // Get roadmap from RoadmapService where agents store the data
+        roadmap = RoadmapService.GetRoadMap();
     }
     
     private async Task StartQuiz(RoadmapTopic topic)
@@ -261,73 +243,5 @@
         isSuggestingChanges = false;
         userSuggestion = "";
         StateHasChanged(); // Force UI update
-    }
-
-    private Roadmap GenerateMockRoadmap()
-    {
-        var userProfile = new UserProfile
-        {
-            LearningGoal = "Become a full-stack web developer with C#/.NET and React",
-            KnownSkills = new List<string?> { "Basic HTML", "Basic CSS" },
-            PreferredLearningStyles = new List<string?> { "hands-on", "project-based" },
-            ExperienceLevel = "intermediate"
-        };
-
-        var roadmap = new Roadmap
-        {
-            Id = Guid.NewGuid(),
-            UserProfile = userProfile,
-            CreatedDate = DateTime.Now,
-            LastModifiedDate = DateTime.Now,
-            Status = RoadmapStatus.Draft
-        };
-
-        // Module 1: Frontend Fundamentals
-        var module1 = new RoadmapModule
-        {
-            Title = "Frontend Fundamentals",
-            Description = "Learn the core technologies for building interactive user interfaces on the web.",
-            Order = 1,
-            EstimatedDuration = TimeSpan.FromHours(15), // 15 hours
-            Resources = new List<LearningResource>
-            {
-                new LearningResource { Title = "MDN Web Docs: HTML", Url = "https://developer.mozilla.org/en-US/docs/Web/HTML", Type = ResourceType.Documentation, Source = "MDN", Description = "Comprehensive HTML reference and tutorials." },
-                new LearningResource { Title = "Flexbox Froggy", Url = "https://flexboxfroggy.com/", Type = ResourceType.Game, Source = "PlayCanvas", Description = "Interactive game to learn Flexbox layouts." },
-                new LearningResource { Title = "CSS Grid Garden", Url = "https://cssgridgarden.com/", Type = ResourceType.Game, Source = "PlayCanvas", Description = "Interactive game to learn CSS Grid layouts." },
-                new LearningResource { Title = "JavaScript.info", Url = "https://javascript.info/", Type = ResourceType.Tutorial, Source = "javascript.info", Description = "Modern JavaScript tutorial covering all core concepts." }
-            }
-        };
-        
-        var topic1_1 = new RoadmapTopic
-        {
-            Title = "Advanced HTML5 & CSS3",
-            Description = "Deep dive into semantic HTML, accessibility, responsive design, and modern CSS techniques.",
-            Order = 1,
-            Concepts = new List<RoadmapConcept>
-            {
-                new RoadmapConcept { Title = "Semantic HTML", Description = "Understand and use tags like <article>, <section>, and <nav>.", Order = 1},
-                new RoadmapConcept { Title = "CSS Flexbox", Description = "Learn one-dimensional layouts.", Order = 2},
-                new RoadmapConcept { Title = "CSS Grid", Description = "Learn two-dimensional layouts.", Order = 3}
-            }
-        };
-        module1.Topics.Add(topic1_1);
-
-        var topic1_2 = new RoadmapTopic
-        {
-            Title = "JavaScript Core Concepts",
-            Description = "Master variables, data types, functions, control flow, DOM manipulation, and asynchronous JavaScript.",
-            Order = 2,
-            Concepts = new List<RoadmapConcept>
-            {
-                new RoadmapConcept { Title = "Variables, Data Types, and Operators", Description = "The fundamentals of storing and manipulating data.", Order = 1 },
-                new RoadmapConcept { Title = "Functions and Scope", Description = "Learn to write and use functions.", Order = 2 },
-                new RoadmapConcept { Title = "DOM Manipulation", Description = "Change the structure and content of a web page.", Order = 3 },
-                new RoadmapConcept { Title = "Asynchronous JavaScript", Description = "Understand Promises and async/await.", Order = 4 }
-            }
-        };
-        module1.Topics.Add(topic1_2);
-        roadmap.Modules.Add(module1);
-
-        return roadmap;
     }
 }

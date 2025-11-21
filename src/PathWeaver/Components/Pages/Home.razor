@@ -309,12 +309,17 @@
 
     private void CheckIfProfileComplete(string agentResponse)
     {
-        // The roadmap completion detection is now handled in the UI
-        // No automatic navigation needed here anymore
+        // Check if roadmap is complete - roadmap should already be stored in RoadmapService
+        if (agentResponse.Contains("ROADMAP_COMPLETE"))
+        {
+            // Roadmap is already managed by RoadmapService through agents
+            // No need to set it here
+        }
     }
 
     private void NavigateToRoadmap()
     {
+        // Navigate to roadmap page - RoadmapView will get roadmap from RoadmapService
         NavManager.NavigateTo("/roadmap");
     }
 
