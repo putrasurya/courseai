@@ -18,45 +18,48 @@ namespace PathWeaver.Agents
         public string Name => "OrchestratorAgent";
         public string Description => "Main orchestrator agent coordinating the learning roadmap creation process";
         public string SystemMessage => """
-            You are the main orchestrator agent responsible for managing the entire learning roadmap creation process. You have access to specialized agents as tools and must coordinate them intelligently.
+            You are the main orchestrator agent responsible for managing the entire learning roadmap creation process. You coordinate specialized agents to deliver a seamless learning experience.
 
             AVAILABLE TOOLS:
             - **PlannerAgent**: Gathers user information and builds complete UserProfile
-            - **StructuringAgent**: Creates pedagogically sound learning frameworks with curated resources (includes research capabilities)
+            - **StructuringAgent**: Creates complete learning roadmaps with pedagogical frameworks and curated resources
             - **RefinementAgent**: Processes feedback and improves existing roadmaps
+            - **CheckRoadmapStatus**: Check if a roadmap exists and get its summary
 
-            WORKFLOW PHASES:
+            WORKFLOW:
             1. **Profile Building**: Use PlannerAgent to gather complete user information
-            2. **Roadmap Generation**: Use StructuringAgent to create comprehensive roadmap with framework and resources
-            3. **Roadmap Refinement**: Use RefinementAgent for improvements based on user feedback
+            2. **Roadmap Generation**: When profile is sufficient, use StructuringAgent to create complete roadmap
+            3. **Roadmap Summary & Completion**: When StructuringAgent completes roadmap creation:
+               - Use CheckRoadmapStatus to get roadmap details
+               - Provide a clear summary of the generated roadmap to the user
+               - Give user opportunity to request refinements
+               - End with "ROADMAP_COMPLETE" keyword only if user is satisfied
+            4. **Refinement**: Use RefinementAgent for improvements based on user feedback
 
             DECISION LOGIC:
-            - If user profile is incomplete: Use PlannerAgent to continue gathering information
-            - If user profile is complete but no roadmap exists: Use StructuringAgent to generate complete roadmap
-            - If roadmap exists and user provides feedback: Use RefinementAgent to improve roadmap
-            - If roadmap exists and user asks general questions: Answer directly or use appropriate agent
+            - If user profile is incomplete → Use PlannerAgent
+            - If user profile is complete but no roadmap exists → Use StructuringAgent
+            - If roadmap exists and user provides feedback → Use RefinementAgent
+            - If roadmap creation is complete AND user is satisfied → Send "ROADMAP_COMPLETE" keyword
 
-            AUTOMATIC WORKFLOW:
-            1. Start with PlannerAgent for profile building
-            2. When profile is sufficient, automatically proceed to roadmap generation
-            3. Use StructuringAgent to create complete learning framework with resources
-            4. Store complete roadmap and notify user
-            5. Handle refinement requests with RefinementAgent
+            CRITICAL COMPLETION PROCESS:
+            When the StructuringAgent creates a roadmap:
+            1. Present a comprehensive summary including:
+               - Learning path overview
+               - Number of modules and key topics
+               - Estimated timeline
+               - Main learning outcomes
+            2. Ask if user wants any refinements or adjustments
+            3. Only send "ROADMAP_COMPLETE" keyword after user confirms satisfaction
 
-            IMPORTANT GUIDELINES:
-            - Always check if UserProfile is sufficient before generating roadmap
-            - Use tools appropriately - don't try to do their specialized work yourself
-            - Provide smooth transitions between phases
+            GUIDELINES:
+            - Use tools appropriately - let specialists handle their domains
             - Keep user informed of progress
-            - Handle errors gracefully and guide user to next steps
+            - Always summarize roadmap before completion signal
+            - Handle errors gracefully
+            - Provide smooth transitions between phases
 
-            CONTEXT AWARENESS:
-            - Track conversation state and user progress
-            - Remember what information has been gathered
-            - Know when to transition between agents
-            - Provide personalized responses based on user's profile and progress
-
-            Your role is to coordinate these specialized agents seamlessly to create the best possible learning experience for the user.
+            Your role is coordination and flow management, not doing the specialized work yourself.
             """;
         public IList<AITool> Tools { get; } = [];
 
@@ -88,8 +91,7 @@ namespace PathWeaver.Agents
                 plannerAgent.Agent.AsAIFunction(),
                 structuringAgent.Agent.AsAIFunction(),
                 refinementAgent.Agent.AsAIFunction(),
-                AIFunctionFactory.Create(CheckRoadmapStatus),
-                AIFunctionFactory.Create(StoreGeneratedRoadmap)
+                AIFunctionFactory.Create(CheckRoadmapStatus)
             };
             
             // Add UserProfile tools (minimal - only summary and status check)
@@ -134,34 +136,6 @@ namespace PathWeaver.Agents
             }
             
             return $"Roadmap exists: Created {roadmap.CreatedDate:yyyy-MM-dd}, Status: {roadmap.Status}, Modules: {roadmap.Modules?.Count ?? 0}";
-        }
-
-        [Description("Store a newly generated roadmap from structured framework and research results")]
-        public string StoreGeneratedRoadmap(string structuredFramework, string researchResults)
-        {
-            try
-            {
-                var userProfile = _userProfileService.GetProfileCopy();
-                
-                var roadmap = new Roadmap
-                {
-                    Id = Guid.NewGuid(),
-                    UserProfile = userProfile,
-                    CreatedDate = DateTime.UtcNow,
-                    LastModifiedDate = DateTime.UtcNow,
-                    Status = RoadmapStatus.Draft,
-                    // TODO: Parse structured framework and research results into modules
-                    Modules = new List<RoadmapModule>()
-                };
-
-                _roadmapStateService.SetRoadmap(roadmap);
-                
-                return "✅ Roadmap successfully generated and stored! The user can now view their personalized learning roadmap.";
-            }
-            catch (Exception ex)
-            {
-                return $"❌ Error storing roadmap: {ex.Message}";
-            }
         }
     }
 }

@@ -1,0 +1,359 @@
+using System.ComponentModel;
+using PathWeaver.Models;
+
+namespace PathWeaver.Services;
+
+public class RoadmapService
+{
+    private Roadmap? _roadmap;
+
+    public RoadmapService()
+    {
+        _roadmap = new Roadmap();
+    }
+
+    public RoadmapService(Roadmap? roadmap)
+    {
+        _roadmap = roadmap ?? new Roadmap();
+    }
+
+    public void SetRoadMap(Roadmap roadmap)
+    {
+        _roadmap = roadmap;
+    }
+
+    public Roadmap? GetRoadMap()
+    {
+        return _roadmap;
+    }
+
+    // Roadmap Management Tools
+    [Description("Initialize a new roadmap with basic information")]
+    public string InitializeRoadMap(string userProfileSummary)
+    {
+        _roadmap = new Roadmap
+        {
+            Id = Guid.NewGuid(),
+            CreatedDate = DateTime.UtcNow,
+            LastModifiedDate = DateTime.UtcNow,
+            Status = RoadmapStatus.Draft,
+            Modules = new List<RoadmapModule>()
+        };
+        return "Roadmap initialized successfully";
+    }
+
+    [Description("Update roadmap status")]
+    public string UpdateRoadMapStatus(RoadmapStatus status)
+    {
+        if (_roadmap == null)
+            return "No roadmap available to update";
+
+        _roadmap.Status = status;
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Roadmap status updated to {status}";
+    }
+
+    [Description("Get roadmap summary with modules count and status")]
+    public string GetRoadMapSummary()
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var moduleCount = _roadmap.Modules.Count;
+        var topicCount = _roadmap.Modules.Sum(m => m.Topics.Count);
+        var resourceCount = _roadmap.Modules.Sum(m => m.Resources.Count);
+        
+        return $"Roadmap Status: {_roadmap.Status}, Modules: {moduleCount}, Topics: {topicCount}, Resources: {resourceCount}, Created: {_roadmap.CreatedDate:yyyy-MM-dd}";
+    }
+
+    // Module Management Tools
+    [Description("Add a new module to the roadmap")]
+    public string AddModule(string title, string description, int estimatedDurationHours)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = new RoadmapModule
+        {
+            Title = title,
+            Description = description,
+            Order = _roadmap.Modules.Count + 1,
+            EstimatedDuration = TimeSpan.FromHours(estimatedDurationHours),
+            Topics = new List<RoadmapTopic>(),
+            Resources = new List<LearningResource>()
+        };
+
+        _roadmap.Modules.Add(module);
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Module '{title}' added successfully";
+    }
+
+    [Description("Update an existing module")]
+    public string UpdateModule(string currentTitle, string newTitle, string description, int estimatedDurationHours)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == currentTitle);
+        if (module == null)
+            return $"Module '{currentTitle}' not found";
+
+        module.Title = newTitle;
+        module.Description = description;
+        module.EstimatedDuration = TimeSpan.FromHours(estimatedDurationHours);
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Module updated successfully";
+    }
+
+    [Description("Remove a module from the roadmap")]
+    public string RemoveModule(string title)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == title);
+        if (module == null)
+            return $"Module '{title}' not found";
+
+        _roadmap.Modules.Remove(module);
+        
+        // Reorder remaining modules
+        for (int i = 0; i < _roadmap.Modules.Count; i++)
+        {
+            _roadmap.Modules[i].Order = i + 1;
+        }
+        
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Module '{title}' removed successfully";
+    }
+
+    [Description("Get list of all modules with basic info")]
+    public string GetAllModules()
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        if (!_roadmap.Modules.Any())
+            return "No modules in roadmap";
+
+        var moduleInfo = _roadmap.Modules
+            .OrderBy(m => m.Order)
+            .Select(m => $"{m.Order}. {m.Title} ({m.EstimatedDuration.TotalHours}h) - {m.Topics.Count} topics, {m.Resources.Count} resources")
+            .ToList();
+
+        return string.Join("\n", moduleInfo);
+    }
+
+    // Topic Management Tools
+    [Description("Add a topic to a specific module")]
+    public string AddTopicToModule(string moduleTitle, string topicTitle, string topicDescription, int confidenceScore = 0)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        var topic = new RoadmapTopic
+        {
+            Title = topicTitle,
+            Description = topicDescription,
+            Order = module.Topics.Count + 1,
+            ConfidenceScore = confidenceScore,
+            Concepts = new List<RoadmapConcept>()
+        };
+
+        module.Topics.Add(topic);
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Topic '{topicTitle}' added to module '{moduleTitle}'";
+    }
+
+    [Description("Update topic confidence score")]
+    public string UpdateTopicConfidence(string moduleTitle, string topicTitle, int confidenceScore)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        var topic = module.Topics.FirstOrDefault(t => t.Title == topicTitle);
+        if (topic == null)
+            return $"Topic '{topicTitle}' not found in module '{moduleTitle}'";
+
+        topic.ConfidenceScore = Math.Max(0, Math.Min(100, confidenceScore)); // Ensure 0-100 range
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Topic '{topicTitle}' confidence updated to {confidenceScore}";
+    }
+
+    [Description("Get topics for a specific module")]
+    public string GetModuleTopics(string moduleTitle)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        if (!module.Topics.Any())
+            return $"No topics in module '{moduleTitle}'";
+
+        var topicInfo = module.Topics
+            .OrderBy(t => t.Order)
+            .Select(t => $"{t.Order}. {t.Title} (Confidence: {t.ConfidenceScore}%) - {t.Concepts.Count} concepts")
+            .ToList();
+
+        return string.Join("\n", topicInfo);
+    }
+
+    // Concept Management Tools
+    [Description("Add a concept to a specific topic")]
+    public string AddConceptToTopic(string moduleTitle, string topicTitle, string conceptTitle, string conceptDescription)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        var topic = module.Topics.FirstOrDefault(t => t.Title == topicTitle);
+        if (topic == null)
+            return $"Topic '{topicTitle}' not found in module '{moduleTitle}'";
+
+        var concept = new RoadmapConcept
+        {
+            Title = conceptTitle,
+            Description = conceptDescription,
+            Order = topic.Concepts.Count + 1
+        };
+
+        topic.Concepts.Add(concept);
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Concept '{conceptTitle}' added to topic '{topicTitle}'";
+    }
+
+    [Description("Get concepts for a specific topic")]
+    public string GetTopicConcepts(string moduleTitle, string topicTitle)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        var topic = module.Topics.FirstOrDefault(t => t.Title == topicTitle);
+        if (topic == null)
+            return $"Topic '{topicTitle}' not found in module '{moduleTitle}'";
+
+        if (!topic.Concepts.Any())
+            return $"No concepts in topic '{topicTitle}'";
+
+        var conceptInfo = topic.Concepts
+            .OrderBy(c => c.Order)
+            .Select(c => $"{c.Order}. {c.Title}: {c.Description}")
+            .ToList();
+
+        return string.Join("\n", conceptInfo);
+    }
+
+    // Resource Management Tools
+    [Description("Add a learning resource to a module")]
+    public string AddResourceToModule(string moduleTitle, string resourceTitle, string url, ResourceType type, string source, string description)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        var resource = new LearningResource
+        {
+            Title = resourceTitle,
+            Url = url,
+            Type = type,
+            Source = source,
+            Description = description
+        };
+
+        module.Resources.Add(resource);
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Resource '{resourceTitle}' added to module '{moduleTitle}'";
+    }
+
+    [Description("Get resources for a specific module")]
+    public string GetModuleResources(string moduleTitle)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        if (!module.Resources.Any())
+            return $"No resources in module '{moduleTitle}'";
+
+        var resourceInfo = module.Resources
+            .Select(r => $"• {r.Title} ({r.Type}) - {r.Source} - {r.Url}")
+            .ToList();
+
+        return string.Join("\n", resourceInfo);
+    }
+
+    [Description("Remove a resource from a module")]
+    public string RemoveResourceFromModule(string moduleTitle, string resourceTitle)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        var resource = module.Resources.FirstOrDefault(r => r.Title == resourceTitle);
+        if (resource == null)
+            return $"Resource '{resourceTitle}' not found in module '{moduleTitle}'";
+
+        module.Resources.Remove(resource);
+        _roadmap.LastModifiedDate = DateTime.UtcNow;
+        return $"Resource '{resourceTitle}' removed from module '{moduleTitle}'";
+    }
+
+    // Analysis Tools
+    [Description("Get detailed roadmap analysis")]
+    public string GetRoadMapAnalysis()
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var totalModules = _roadmap.Modules.Count;
+        
+        if (totalModules == 0)
+            return "Roadmap is empty - no modules available";
+
+        var totalTopics = _roadmap.Modules.Sum(m => m.Topics.Count);
+        var totalConcepts = _roadmap.Modules.SelectMany(m => m.Topics).Sum(t => t.Concepts.Count);
+        var totalResources = _roadmap.Modules.Sum(m => m.Resources.Count);
+        var totalDuration = _roadmap.Modules.Sum(m => m.EstimatedDuration.TotalHours);
+        
+        var modulesWithTopics = _roadmap.Modules.Where(m => m.Topics.Any()).ToList();
+        var averageConfidence = modulesWithTopics.Any() ? modulesWithTopics.Average(m => m.AverageConfidence) : 0;
+
+        return $@"Roadmap Analysis:
+- Status: {_roadmap.Status}
+- Total Modules: {totalModules}
+- Total Topics: {totalTopics}
+- Total Concepts: {totalConcepts}
+- Total Resources: {totalResources}
+- Total Estimated Duration: {totalDuration} hours
+- Average Confidence Score: {averageConfidence:F1}%
+- Created: {_roadmap.CreatedDate:yyyy-MM-dd HH:mm}
+- Last Modified: {_roadmap.LastModifiedDate:yyyy-MM-dd HH:mm}";
+    }
+}

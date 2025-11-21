@@ -64,7 +64,19 @@
                                     <div class="d-flex align-items-start @(message.IsFromUser ? "justify-content-end" : "")">
                                         <div class="message @(message.IsFromUser ? "user-message" : "agent-message")">
                                             <small class="text-muted">@(message.IsFromUser ? "You" : "AI Planner")</small>
-                                            <p class="mb-0">@((MarkupString)ConvertMarkdownToHtml(message.Content))</p>
+                                            <div class="mb-0">
+                                                @((MarkupString)ConvertMarkdownToHtml(GetMessageContentWithoutKeyword(message.Content)))
+                                                
+                                                @if (!message.IsFromUser && message.Content.Contains("ROADMAP_COMPLETE", StringComparison.OrdinalIgnoreCase))
+                                                {
+                                                    <div class="mt-2">
+                                                        <button @onclick="NavigateToRoadmap" class="btn btn-success btn-sm">
+                                                            <i class="fas fa-route me-1"></i>
+                                                            View Your Learning Roadmap
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
                                             <small class="text-muted">@message.Timestamp.ToString("HH:mm")</small>
                                         </div>
                                     </div>
@@ -170,6 +182,19 @@
     .message em {
         font-style: italic;
     }
+    
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
 </style>
 
 @code {
@@ -178,7 +203,6 @@
     private bool isPlanning = false;
     private bool isInConversation = false;
     private bool isProcessing = false;
-    private bool isProfileComplete = false;
 
     private List<ConversationMessage> conversationHistory = new();
 
@@ -285,25 +309,22 @@
 
     private void CheckIfProfileComplete(string agentResponse)
     {
-        // Enhanced heuristic to detect when roadmap has been generated
-        if (agentResponse.Contains("roadmap has been successfully generated", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("personalized learning roadmap", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("view your roadmap", StringComparison.OrdinalIgnoreCase))
-        {
-            isProfileComplete = true;
-            // The orchestrator will have automatically generated the roadmap
-            // Check if we have a roadmap in the state service
-            var roadmap = RoadmapState.CurrentRoadmap;
-            if (roadmap != null)
-            {
-                // Navigate to roadmap view after a short delay
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(3000); // Give user time to read the message
-                    await InvokeAsync(() => NavManager.NavigateTo("/roadmap"));
-                });
-            }
-        }
+        // The roadmap completion detection is now handled in the UI
+        // No automatic navigation needed here anymore
+    }
+
+    private void NavigateToRoadmap()
+    {
+        NavManager.NavigateTo("/roadmap");
+    }
+
+    private string GetMessageContentWithoutKeyword(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return content;
+
+        // Remove the ROADMAP_COMPLETE keyword from display
+        return content.Replace("ROADMAP_COMPLETE", "", StringComparison.OrdinalIgnoreCase).Trim();
     }
 
     private async Task HandleKeyPress(KeyboardEventArgs e)

@@ -29,6 +29,7 @@ builder.Services.AddSingleton<InstrumentChatClient>();
 builder.Services.AddSingleton<RoadmapStateService>();
 builder.Services.AddSingleton<UserProfileService>();
 builder.Services.AddSingleton<UserProfileToolsService>();
+builder.Services.AddSingleton<RoadmapService>();
 
 // Register core agents
 builder.Services.AddSingleton<IPlannerAgent, PlannerAgent>();
