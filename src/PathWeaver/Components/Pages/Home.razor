@@ -35,7 +35,6 @@
                                 @if (isPlanning)
                                 {
                                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                    <span class="sr-only">Loading...</span>
                                     <span> Planning...</span>
                                 }
                                 else
@@ -86,28 +85,6 @@
                                 }
                             </button>
                         </div>
-
-                        <!-- Generate Roadmap Button (shown when profile is complete) -->
-                        @if (isProfileComplete)
-                        {
-                            <div class="mt-3 text-center">
-                                <div class="alert alert-success mb-3" role="alert">
-                                    <i class="bi bi-check-circle"></i> Your profile is ready! You can now generate your personalized learning roadmap.
-                                </div>
-                                <button @onclick="GenerateRoadmap" class="btn btn-success btn-lg" disabled="@isGeneratingRoadmap">
-                                    @if (isGeneratingRoadmap)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        <span>Generating Roadmap...</span>
-                                    }
-                                    else
-                                    {
-                                        <i class="bi bi-map"></i>
-                                        <span> Generate My Learning Roadmap</span>
-                                    }
-                                </button>
-                            </div>
-                        }
                     </div>
                 </div>
             }
@@ -149,7 +126,6 @@
     private bool isInConversation = false;
     private bool isProcessing = false;
     private bool isProfileComplete = false;
-    private bool isGeneratingRoadmap = false;
 
     private List<ConversationMessage> conversationHistory = new();
 
@@ -256,63 +232,24 @@
 
     private void CheckIfProfileComplete(string agentResponse)
     {
-        // Enhanced heuristic to detect when profile gathering is complete
-        if (agentResponse.Contains("profile is complete", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("ready to create", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("sufficient information", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("ready to proceed", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("generate your roadmap", StringComparison.OrdinalIgnoreCase) ||
-            agentResponse.Contains("learning roadmap", StringComparison.OrdinalIgnoreCase))
+        // Enhanced heuristic to detect when roadmap has been generated
+        if (agentResponse.Contains("roadmap has been successfully generated", StringComparison.OrdinalIgnoreCase) ||
+            agentResponse.Contains("personalized learning roadmap", StringComparison.OrdinalIgnoreCase) ||
+            agentResponse.Contains("view your roadmap", StringComparison.OrdinalIgnoreCase))
         {
             isProfileComplete = true;
-        }
-    }
-
-    private async Task GenerateRoadmap()
-    {
-        isGeneratingRoadmap = true;
-
-        try
-        {
-            conversationHistory.Add(new ConversationMessage
+            // The orchestrator will have automatically generated the roadmap
+            // Check if we have a roadmap in the state service
+            var roadmap = RoadmapState.CurrentRoadmap;
+            if (roadmap != null)
             {
-                Content = "📋 Starting roadmap generation using your complete profile...",
-                IsFromUser = false
-            });
-            StateHasChanged();
-
-            // Generate roadmap using the complete UserProfile gathered through conversation
-            // The orchestrator will use all the information collected (learning goals, experience, skills, preferences)
-            var roadmap = await Orchestrator.GenerateRoadmap();
-            
-            // Store the roadmap in the state service
-            RoadmapState.SetRoadmap(roadmap);
-            
-            conversationHistory.Add(new ConversationMessage
-            {
-                Content = "🎉 Your personalized learning roadmap has been successfully generated based on your goals, experience level, skills, and learning preferences! Redirecting you to view your roadmap...",
-                IsFromUser = false
-            });
-            StateHasChanged();
-
-            // Small delay to show the success message
-            await Task.Delay(2000);
-            
-            // Navigate to roadmap view
-            NavManager.NavigateTo("/roadmap");
-        }
-        catch (Exception ex)
-        {
-            conversationHistory.Add(new ConversationMessage
-            {
-                Content = $"Sorry, there was an error generating your roadmap: {ex.Message}. Please try again or continue our conversation to refine your profile.",
-                IsFromUser = false
-            });
-        }
-        finally
-        {
-            isGeneratingRoadmap = false;
-            StateHasChanged();
+                // Navigate to roadmap view after a short delay
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(3000); // Give user time to read the message
+                    await InvokeAsync(() => NavManager.NavigateTo("/roadmap"));
+                });
+            }
         }
     }
 

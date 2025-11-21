@@ -15,6 +15,7 @@ namespace PathWeaver.Agents
         public AgentThread? Thread { get; set; }
         public AIAgent Agent { get; init; }
         public string Name => "PlannerAgent";
+        public string Description => "Gathers user information and builds complete UserProfile through conversation";
         public string SystemMessage => """
             You are a planner agent specializing in user interaction and goal elicitation.
             Your primary role is to engage in a conversation with the user to deeply understand their learning objectives, existing knowledge, and preferences.

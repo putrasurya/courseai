@@ -14,6 +14,7 @@ namespace PathWeaver.Agents
         public AgentThread? Thread { get; set; }
         public AIAgent Agent { get; init; }
         public string Name => "RefinementAgent";
+        public string Description => "Processes feedback and improves existing roadmaps based on user input";
         public string SystemMessage => "You are a refinement agent responsible for updating and modifying a roadmap based on user feedback.";
         public IList<AITool> Tools { get; } = [];
 

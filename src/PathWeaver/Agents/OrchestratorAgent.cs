@@ -6,6 +6,7 @@ using PathWeaver.Services;
 using Azure.Identity;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using System.ComponentModel;
 
 namespace PathWeaver.Agents
 {
@@ -14,50 +15,69 @@ namespace PathWeaver.Agents
         public AgentThread? Thread { get; set; }
         public AIAgent Agent { get; init; }
         public string Name => "OrchestratorAgent";
+        public string Description => "Main orchestrator agent coordinating the learning roadmap creation process";
         public string SystemMessage => """
-            You are a top-level orchestrator agent managing the learning roadmap creation process.
+            You are the main orchestrator agent responsible for managing the entire learning roadmap creation process. You have access to specialized agents as tools and must coordinate them intelligently.
 
-            PHASE CHECKLIST: 
-            [ ] User Profile Gathering
-            [ ] Roadmap Research
-            [ ] Roadmap Structuring
-            [ ] Roadmap Refinement
-            [ ] Finished
-            
-            Your job is to coordinate with the PlannerAgent to gather complete user information before proceeding to research and structuring phases.
-            
-            During the planning phase:
-            1. Direct all user interactions through the PlannerAgent
-            2. The PlannerAgent will ask questions to build a complete UserProfile
-            3. Once the UserProfile is sufficiently detailed, signal completion
-            4. Only then proceed to research and roadmap generation phases
-            
-            Response format:
-            - For ongoing planning: Return the PlannerAgent's response directly
-            - When profile is complete: Include the phrase "profile is complete" in your response
-            - Always maintain a conversational and helpful tone
+            AVAILABLE TOOLS:
+            - **PlannerAgent**: Gathers user information and builds complete UserProfile
+            - **StructuringAgent**: Creates pedagogically sound learning frameworks with curated resources (includes research capabilities)
+            - **RefinementAgent**: Processes feedback and improves existing roadmaps
+
+            WORKFLOW PHASES:
+            1. **Profile Building**: Use PlannerAgent to gather complete user information
+            2. **Roadmap Generation**: Use StructuringAgent to create comprehensive roadmap with framework and resources
+            3. **Roadmap Refinement**: Use RefinementAgent for improvements based on user feedback
+
+            DECISION LOGIC:
+            - If user profile is incomplete: Use PlannerAgent to continue gathering information
+            - If user profile is complete but no roadmap exists: Use StructuringAgent to generate complete roadmap
+            - If roadmap exists and user provides feedback: Use RefinementAgent to improve roadmap
+            - If roadmap exists and user asks general questions: Answer directly or use appropriate agent
+
+            AUTOMATIC WORKFLOW:
+            1. Start with PlannerAgent for profile building
+            2. When profile is sufficient, automatically proceed to roadmap generation
+            3. Use StructuringAgent to create complete learning framework with resources
+            4. Store complete roadmap and notify user
+            5. Handle refinement requests with RefinementAgent
+
+            IMPORTANT GUIDELINES:
+            - Always check if UserProfile is sufficient before generating roadmap
+            - Use tools appropriately - don't try to do their specialized work yourself
+            - Provide smooth transitions between phases
+            - Keep user informed of progress
+            - Handle errors gracefully and guide user to next steps
+
+            CONTEXT AWARENESS:
+            - Track conversation state and user progress
+            - Remember what information has been gathered
+            - Know when to transition between agents
+            - Provide personalized responses based on user's profile and progress
+
+            Your role is to coordinate these specialized agents seamlessly to create the best possible learning experience for the user.
             """;
         public IList<AITool> Tools { get; } = [];
 
         private readonly IPlannerAgent _plannerAgent;
-        private readonly IResearchAgent _researchAgent;
         private readonly IStructuringAgent _structuringAgent;
         private readonly IRefinementAgent _refinementAgent;
         private readonly UserProfileService _userProfileService;
+        private readonly RoadmapStateService _roadmapStateService;
 
         public OrchestratorAgent(
             IOptions<AzureOpenAIOptions> options,
             IPlannerAgent plannerAgent,
-            IResearchAgent researchAgent, 
             IStructuringAgent structuringAgent,
             IRefinementAgent refinementAgent,
-            UserProfileService userProfileService)
+            UserProfileService userProfileService,
+            RoadmapStateService roadmapStateService)
         {
             _plannerAgent = plannerAgent;
-            _researchAgent = researchAgent;
             _structuringAgent = structuringAgent;
             _refinementAgent = refinementAgent;
             _userProfileService = userProfileService;
+            _roadmapStateService = roadmapStateService;
             
             var azureOptions = options.Value;
             Agent = new AzureOpenAIClient(
@@ -66,86 +86,88 @@ namespace PathWeaver.Agents
                     .GetChatClient(azureOptions.ModelName)
                     .CreateAIAgent(
                         name: Name,
+                        description: Description,
                         instructions: SystemMessage,
                         tools: [
                             plannerAgent.Agent.AsAIFunction(),
-                            researchAgent.Agent.AsAIFunction(),
                             structuringAgent.Agent.AsAIFunction(),
-                            refinementAgent.Agent.AsAIFunction()
+                            refinementAgent.Agent.AsAIFunction(),
+                            AIFunctionFactory.Create(CheckUserProfileStatus),
+                            AIFunctionFactory.Create(CheckRoadmapStatus),
+                            AIFunctionFactory.Create(StoreGeneratedRoadmap)
                         ]
                     );
         }
 
         public async Task<string> Invoke(string input)
         {
-            // During the planning phase, we primarily work with the PlannerAgent
-            if (Thread != null)
+            try
             {
-                // Continue existing conversation thread
-                var plannerResponse = await _plannerAgent.Invoke(input);
-                
-                // Check if the user profile is complete using the service
-                if (_userProfileService.IsProfileSufficient())
-                {
-                    return plannerResponse + "\n\nGreat! I have enough information about your learning goals and background. Your profile is complete and I'm ready to create your personalized learning roadmap. Click the 'Generate My Learning Roadmap' button when you're ready to proceed!";
-                }
-                
-                return plannerResponse;
+                // Let the AI Agent handle all orchestration decisions
+                var response = await Agent.RunAsync(input, Thread);
+                return response.ToString();
             }
-            
-            // Fallback to orchestrator agent
-            var response = await Agent.RunAsync(input, Thread);
-            return response.ToString();
+            catch (Exception ex)
+            {
+                return $"I encountered an error while processing your request: {ex.Message}. Please try again.";
+            }
         }
 
         public Task<string> StartPlanning(string learningGoal)
         {
             Thread = Agent.GetNewThread();
-            _plannerAgent.Thread = Thread; // Share the thread with planner agent
-            return _plannerAgent.Invoke(learningGoal);
+            return Invoke(learningGoal);
         }
 
-        public async Task<Roadmap> GenerateRoadmap()
+        // AI Functions for the orchestrator to use
+        [Description("Check if the user profile is complete and get profile summary")]
+        public string CheckUserProfileStatus()
         {
-            // Use the profile from the centralized service
-            if (!_userProfileService.IsProfileSufficient())
-            {
-                throw new InvalidOperationException("User profile is not sufficiently complete. Please complete the planning conversation first.");
-            }
-
-            var userProfile = _userProfileService.GetProfileCopy();
-
-            // Phase 2: Research resources
-            var knownSkillsText = string.Join(", ", userProfile.KnownSkills.Where(s => !string.IsNullOrEmpty(s)));
-            var preferencesText = string.Join(", ", userProfile.PreferredLearningStyles.Where(s => !string.IsNullOrEmpty(s)));
-            var researchInput = $"Learning Goal: {userProfile.LearningGoal}, Experience: {userProfile.ExperienceLevel}, Known Skills: {knownSkillsText}, Learning Preferences: {preferencesText}";
-            var researchResult = await _researchAgent.Invoke(researchInput);
-
-            // Phase 3: Structure the roadmap
-            var structuringInput = $"User Profile: {System.Text.Json.JsonSerializer.Serialize(userProfile)}\nResearch Results: {researchResult}";
-            var structuredResult = await _structuringAgent.Invoke(structuringInput);
-
-            // Create and return the roadmap
-            return new Roadmap
-            {
-                Id = Guid.NewGuid(),
-                UserProfile = userProfile,
-                CreatedDate = DateTime.UtcNow,
-                LastModifiedDate = DateTime.UtcNow,
-                Status = RoadmapStatus.Draft,
-                // TODO: Parse structured result into modules
-                Modules = new List<RoadmapModule>()
-            };
-        }
-
-        public async Task<Roadmap> RefineRoadmap(Roadmap roadmap, string userFeedback)
-        {
-            var refinementInput = $"Current Roadmap: {System.Text.Json.JsonSerializer.Serialize(roadmap)}\nUser Feedback: {userFeedback}";
-            var refinedResult = await _refinementAgent.Invoke(refinementInput);
+            var isComplete = _userProfileService.IsProfileSufficient();
+            var summary = _userProfileService.GetProfileSummary();
             
-            // TODO: Parse refined result and update roadmap
-            roadmap.LastModifiedDate = DateTime.UtcNow;
-            return roadmap;
+            return $"Profile Complete: {isComplete}\n" +
+                   $"Profile Summary: {summary}";
+        }
+
+        [Description("Check if a roadmap exists for the current user")]
+        public string CheckRoadmapStatus()
+        {
+            var roadmap = _roadmapStateService.CurrentRoadmap;
+            if (roadmap == null)
+            {
+                return "No roadmap exists currently.";
+            }
+            
+            return $"Roadmap exists: Created {roadmap.CreatedDate:yyyy-MM-dd}, Status: {roadmap.Status}, Modules: {roadmap.Modules?.Count ?? 0}";
+        }
+
+        [Description("Store a newly generated roadmap from structured framework and research results")]
+        public string StoreGeneratedRoadmap(string structuredFramework, string researchResults)
+        {
+            try
+            {
+                var userProfile = _userProfileService.GetProfileCopy();
+                
+                var roadmap = new Roadmap
+                {
+                    Id = Guid.NewGuid(),
+                    UserProfile = userProfile,
+                    CreatedDate = DateTime.UtcNow,
+                    LastModifiedDate = DateTime.UtcNow,
+                    Status = RoadmapStatus.Draft,
+                    // TODO: Parse structured framework and research results into modules
+                    Modules = new List<RoadmapModule>()
+                };
+
+                _roadmapStateService.SetRoadmap(roadmap);
+                
+                return "✅ Roadmap successfully generated and stored! The user can now view their personalized learning roadmap.";
+            }
+            catch (Exception ex)
+            {
+                return $"❌ Error storing roadmap: {ex.Message}";
+            }
         }
     }
 }
