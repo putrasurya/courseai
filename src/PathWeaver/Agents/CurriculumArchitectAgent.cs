@@ -99,16 +99,15 @@ namespace PathWeaver.Agents
 
         private readonly UserProfileService _userProfileService;
 
-        public CurriculumArchitectAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService)
+        public CurriculumArchitectAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService)
         {
             _userProfileService = userProfileService;
             
-            var azureOptions = options.Value;
-            Agent = new AzureOpenAIClient(
-                new Uri(azureOptions.Endpoint),
-                new DefaultAzureCredential())
-                    .GetChatClient(azureOptions.ModelName)
-                    .CreateAIAgent(instructions: SystemMessage);
+            Agent = new ChatClientAgent(
+                instrumentChatClient.ChatClient,
+                name: Name,
+                description: Description,
+                instructions: SystemMessage);
         }
 
         public async Task<string> Invoke(string input)

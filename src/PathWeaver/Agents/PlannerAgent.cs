@@ -42,24 +42,20 @@ namespace PathWeaver.Agents
 
         private readonly UserProfileService _userProfileService;
 
-        public PlannerAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService)
+        public PlannerAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService)
         {
             _userProfileService = userProfileService;
             
-            var azureOptions = options.Value;
-            Agent = new AzureOpenAIClient(
-                new Uri(azureOptions.Endpoint),
-                new DefaultAzureCredential())
-                    .GetChatClient(azureOptions.ModelName)
-                    .CreateAIAgent(
-                        name: Name,
-                        instructions: SystemMessage,
-                        tools: [
-                            AIFunctionFactory.Create(UpdateUserProfile),
-                            AIFunctionFactory.Create(RemoveFromUserProfile),
-                            AIFunctionFactory.Create(GetUserProfileSummary)
-                        ]
-                    );
+            Agent = new ChatClientAgent(
+                instrumentChatClient.ChatClient,
+                name: Name,
+                description: Description,
+                instructions: SystemMessage,
+                tools: [
+                    AIFunctionFactory.Create(UpdateUserProfile),
+                    AIFunctionFactory.Create(RemoveFromUserProfile),
+                    AIFunctionFactory.Create(GetUserProfileSummary)
+                ]);
         }
 
         public async Task<string> Invoke(string input)

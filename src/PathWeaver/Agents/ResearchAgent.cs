@@ -71,7 +71,7 @@ namespace PathWeaver.Agents
         private readonly ISkillMappingAgent _skillMappingAgent;
         private readonly IResourceEvaluationAgent _resourceEvaluationAgent;
 
-        public ResearchAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService,
+        public ResearchAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
             IContentDiscoveryAgent contentDiscoveryAgent,
             ISkillMappingAgent skillMappingAgent, 
             IResourceEvaluationAgent resourceEvaluationAgent)
@@ -81,20 +81,16 @@ namespace PathWeaver.Agents
             _skillMappingAgent = skillMappingAgent;
             _resourceEvaluationAgent = resourceEvaluationAgent;
             
-            var azureOptions = options.Value;
-            Agent = new AzureOpenAIClient(
-                new Uri(azureOptions.Endpoint),
-                new DefaultAzureCredential())
-                    .GetChatClient(azureOptions.ModelName)
-                    .CreateAIAgent(
-                        name: Name,
-                        instructions: SystemMessage,
-                        tools: [
-                            _contentDiscoveryAgent.Agent.AsAIFunction(),
-                            _skillMappingAgent.Agent.AsAIFunction(),
-                            _resourceEvaluationAgent.Agent.AsAIFunction()
-                        ]
-                    );
+            Agent = new ChatClientAgent(
+                instrumentChatClient.ChatClient,
+                name: Name,
+                description: Description,
+                instructions: SystemMessage,
+                tools: [
+                    _contentDiscoveryAgent.Agent.AsAIFunction(),
+                    _skillMappingAgent.Agent.AsAIFunction(),
+                    _resourceEvaluationAgent.Agent.AsAIFunction()
+                ]);
         }
 
         public async Task<string> Invoke(string input)

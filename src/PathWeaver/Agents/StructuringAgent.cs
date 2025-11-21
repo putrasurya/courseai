@@ -80,7 +80,7 @@ namespace PathWeaver.Agents
         private readonly IExperienceDesignAgent _experienceDesignAgent;
         private readonly IResearchAgent _researchAgent;
 
-        public StructuringAgent(IOptions<AzureOpenAIOptions> options, UserProfileService userProfileService,
+        public StructuringAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
             ICurriculumArchitectAgent curriculumArchitectAgent,
             IPathOptimizationAgent pathOptimizationAgent,
             IExperienceDesignAgent experienceDesignAgent,
@@ -92,21 +92,17 @@ namespace PathWeaver.Agents
             _experienceDesignAgent = experienceDesignAgent;
             _researchAgent = researchAgent;
             
-            var azureOptions = options.Value;
-            Agent = new AzureOpenAIClient(
-                new Uri(azureOptions.Endpoint),
-                new DefaultAzureCredential())
-                    .GetChatClient(azureOptions.ModelName)
-                    .CreateAIAgent(
-                        name: Name,
-                        instructions: SystemMessage,
-                        tools: [
-                            _curriculumArchitectAgent.Agent.AsAIFunction(),
-                            _pathOptimizationAgent.Agent.AsAIFunction(),
-                            _experienceDesignAgent.Agent.AsAIFunction(),
-                            _researchAgent.Agent.AsAIFunction()
-                        ]
-                    );
+            Agent = new ChatClientAgent(
+                instrumentChatClient.ChatClient,
+                name: Name,
+                description: Description,
+                instructions: SystemMessage,
+                tools: [
+                    _curriculumArchitectAgent.Agent.AsAIFunction(),
+                    _pathOptimizationAgent.Agent.AsAIFunction(),
+                    _experienceDesignAgent.Agent.AsAIFunction(),
+                    _researchAgent.Agent.AsAIFunction()
+                ]);
         }
 
         public async Task<string> Invoke(string input)
