@@ -7,6 +7,7 @@ using Azure.Identity;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using System.ComponentModel;
+using PathWeaver.Agents.Interfaces;
 
 namespace PathWeaver.Agents
 {

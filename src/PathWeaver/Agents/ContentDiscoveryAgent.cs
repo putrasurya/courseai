@@ -1,3 +1,4 @@
+using PathWeaver.Agents.Interfaces;
 using Azure.AI.OpenAI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Options;

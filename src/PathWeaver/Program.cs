@@ -1,4 +1,5 @@
 using PathWeaver.Agents;
+using PathWeaver.Agents.Interfaces;
 using PathWeaver.Components;
 using PathWeaver.Models;
 using PathWeaver.Services;

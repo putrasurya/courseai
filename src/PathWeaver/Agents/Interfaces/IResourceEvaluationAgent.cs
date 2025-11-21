@@ -1,6 +1,6 @@
 using PathWeaver.Models;
 
-namespace PathWeaver.Agents
+namespace PathWeaver.Agents.Interfaces
 {
     public interface IResourceEvaluationAgent : IAgent
     {

@@ -2,7 +2,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using PathWeaver.Models;
 
-namespace PathWeaver.Agents
+namespace PathWeaver.Agents.Interfaces
 {
     public interface IAgent
     {

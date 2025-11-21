@@ -1,4 +1,4 @@
-namespace PathWeaver.Agents
+namespace PathWeaver.Agents.Interfaces
 {
     public interface IStructuringAgent : IAgent
     {
