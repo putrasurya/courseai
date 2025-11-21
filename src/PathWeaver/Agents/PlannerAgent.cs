@@ -41,21 +41,19 @@ namespace PathWeaver.Agents
         public IList<AITool> Tools { get; } = [];
 
         private readonly UserProfileService _userProfileService;
+        private readonly UserProfileToolsService _userProfileToolsService;
 
-        public PlannerAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService)
+        public PlannerAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, UserProfileToolsService userProfileToolsService)
         {
             _userProfileService = userProfileService;
+            _userProfileToolsService = userProfileToolsService;
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools: [
-                    AIFunctionFactory.Create(UpdateUserProfile),
-                    AIFunctionFactory.Create(RemoveFromUserProfile),
-                    AIFunctionFactory.Create(GetUserProfileSummary)
-                ]);
+                tools: _userProfileToolsService.GetPlannerTools());
         }
 
         public async Task<string> Invoke(string input)
@@ -74,25 +72,6 @@ namespace PathWeaver.Agents
             return _userProfileService.CurrentProfile;
         }
 
-        // Tool functions that the AI can call
-        [Description("Update a field in the user profile with a value")]
-        private string UpdateUserProfile(string field, string value)
-        {
-            _userProfileService.UpdateProfile(field, value);
-            return $"Updated {field} with: {value}";
-        }
-
-        [Description("Remove an item from a user profile list field")]
-        private string RemoveFromUserProfile(string field, string value)
-        {
-            _userProfileService.RemoveFromProfile(field, value);
-            return $"Removed {value} from {field}";
-        }
-
-        [Description("Get a summary of the current user profile")]
-        private string GetUserProfileSummary()
-        {
-            return _userProfileService.GetProfileSummary();
-        }
+        // Tool functions that the AI can call are now handled by UserProfileToolsService
     }
 }

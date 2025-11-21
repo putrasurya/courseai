@@ -65,6 +65,7 @@ namespace PathWeaver.Agents
         private readonly IRefinementAgent _refinementAgent;
         private readonly UserProfileService _userProfileService;
         private readonly RoadmapStateService _roadmapStateService;
+        private readonly UserProfileToolsService _userProfileToolsService;
 
         public OrchestratorAgent(
             InstrumentChatClient instrumentChatClient,
@@ -72,28 +73,34 @@ namespace PathWeaver.Agents
             IStructuringAgent structuringAgent,
             IRefinementAgent refinementAgent,
             UserProfileService userProfileService,
-            RoadmapStateService roadmapStateService)
+            RoadmapStateService roadmapStateService,
+            UserProfileToolsService userProfileToolsService)
         {
             _plannerAgent = plannerAgent;
             _structuringAgent = structuringAgent;
             _refinementAgent = refinementAgent;
             _userProfileService = userProfileService;
             _roadmapStateService = roadmapStateService;
+            _userProfileToolsService = userProfileToolsService;
+
+            var orchestratorTools = new List<AIFunction>
+            {
+                plannerAgent.Agent.AsAIFunction(),
+                structuringAgent.Agent.AsAIFunction(),
+                refinementAgent.Agent.AsAIFunction(),
+                AIFunctionFactory.Create(CheckRoadmapStatus),
+                AIFunctionFactory.Create(StoreGeneratedRoadmap)
+            };
+            
+            // Add UserProfile tools (minimal - only summary and status check)
+            orchestratorTools.AddRange(_userProfileToolsService.GetOrchestratorTools());
 
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools:
-                [
-                    plannerAgent.Agent.AsAIFunction(),
-                    structuringAgent.Agent.AsAIFunction(),
-                    refinementAgent.Agent.AsAIFunction(),
-                    AIFunctionFactory.Create(CheckUserProfileStatus),
-                    AIFunctionFactory.Create(CheckRoadmapStatus),
-                    AIFunctionFactory.Create(StoreGeneratedRoadmap)
-                ]);
+                tools: orchestratorTools.ToArray());
         }
 
         public async Task<string> Invoke(string input)
@@ -117,16 +124,6 @@ namespace PathWeaver.Agents
         }
 
         // AI Functions for the orchestrator to use
-        [Description("Check if the user profile is complete and get profile summary")]
-        public string CheckUserProfileStatus()
-        {
-            var isComplete = _userProfileService.IsProfileSufficient();
-            var summary = _userProfileService.GetProfileSummary();
-            
-            return $"Profile Complete: {isComplete}\n" +
-                   $"Profile Summary: {summary}";
-        }
-
         [Description("Check if a roadmap exists for the current user")]
         public string CheckRoadmapStatus()
         {

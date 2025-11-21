@@ -75,34 +75,43 @@ namespace PathWeaver.Agents
         public IList<AITool> Tools { get; } = [];
 
         private readonly UserProfileService _userProfileService;
+        private readonly UserProfileToolsService _userProfileToolsService;
         private readonly ICurriculumArchitectAgent _curriculumArchitectAgent;
         private readonly IPathOptimizationAgent _pathOptimizationAgent;
         private readonly IExperienceDesignAgent _experienceDesignAgent;
         private readonly IResearchAgent _researchAgent;
 
         public StructuringAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
+            UserProfileToolsService userProfileToolsService,
             ICurriculumArchitectAgent curriculumArchitectAgent,
             IPathOptimizationAgent pathOptimizationAgent,
             IExperienceDesignAgent experienceDesignAgent,
             IResearchAgent researchAgent)
         {
             _userProfileService = userProfileService;
+            _userProfileToolsService = userProfileToolsService;
             _curriculumArchitectAgent = curriculumArchitectAgent;
             _pathOptimizationAgent = pathOptimizationAgent;
             _experienceDesignAgent = experienceDesignAgent;
             _researchAgent = researchAgent;
+            
+            var tools = new List<AIFunction>
+            {
+                _curriculumArchitectAgent.Agent.AsAIFunction(),
+                _pathOptimizationAgent.Agent.AsAIFunction(),
+                _experienceDesignAgent.Agent.AsAIFunction(),
+                _researchAgent.Agent.AsAIFunction()
+            };
+            
+            // Add basic UserProfile tools (summary, status, basic updates)
+            tools.AddRange(_userProfileToolsService.GetStructuringTools());
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools: [
-                    _curriculumArchitectAgent.Agent.AsAIFunction(),
-                    _pathOptimizationAgent.Agent.AsAIFunction(),
-                    _experienceDesignAgent.Agent.AsAIFunction(),
-                    _researchAgent.Agent.AsAIFunction()
-                ]);
+                tools: tools.ToArray());
         }
 
         public async Task<string> Invoke(string input)
