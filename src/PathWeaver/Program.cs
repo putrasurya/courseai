@@ -1,3 +1,7 @@
+using OpenTelemetry;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Logs;
 using PathWeaver.Agents;
 using PathWeaver.Agents.Interfaces;
 using PathWeaver.Components;
@@ -17,6 +21,9 @@ builder.Services.AddRazorComponents()
 // Configure Azure OpenAI options
 builder.Services.Configure<AzureOpenAIOptions>(
     builder.Configuration.GetSection(AzureOpenAIOptions.SectionName));
+
+// Register Instrumented Chat Client
+builder.Services.AddSingleton<InstrumentChatClient>();
 
 // Register application services
 builder.Services.AddSingleton<RoadmapStateService>();
@@ -40,6 +47,22 @@ builder.Services.AddSingleton<IExperienceDesignAgent, ExperienceDesignAgent>();
 
 // Register main coordinator
 builder.Services.AddSingleton<IOrchestratorAgent, OrchestratorAgent>();
+
+// Configure OpenTelemetry and Aspire
+var resourceBuilder = ResourceBuilder
+    .CreateDefault()
+    .AddService("PathWeaver");
+
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .SetResourceBuilder(resourceBuilder)
+    .AddSource("MyApplication")
+    .AddSource("*Microsoft.Extensions.AI") // Listen to the Experimental.Microsoft.Extensions.AI source for chat client telemetry
+    .AddSource("*Microsoft.Extensions.Agents*") // Listen to the Experimental.Microsoft.Extensions.Agents source for agent telemetry
+    .AddOtlpExporter(options => options.Endpoint = new Uri("http://localhost:4317"))
+    .Build();
+
+
+
 
 var app = builder.Build();
 

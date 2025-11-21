@@ -67,7 +67,7 @@ namespace PathWeaver.Agents
         private readonly RoadmapStateService _roadmapStateService;
 
         public OrchestratorAgent(
-            IOptions<AzureOpenAIOptions> options,
+            InstrumentChatClient instrumentChatClient,
             IPlannerAgent plannerAgent,
             IStructuringAgent structuringAgent,
             IRefinementAgent refinementAgent,
@@ -79,25 +79,21 @@ namespace PathWeaver.Agents
             _refinementAgent = refinementAgent;
             _userProfileService = userProfileService;
             _roadmapStateService = roadmapStateService;
-            
-            var azureOptions = options.Value;
-            Agent = new AzureOpenAIClient(
-                new Uri(azureOptions.Endpoint),
-                new DefaultAzureCredential())
-                    .GetChatClient(azureOptions.ModelName)
-                    .CreateAIAgent(
-                        name: Name,
-                        description: Description,
-                        instructions: SystemMessage,
-                        tools: [
-                            plannerAgent.Agent.AsAIFunction(),
-                            structuringAgent.Agent.AsAIFunction(),
-                            refinementAgent.Agent.AsAIFunction(),
-                            AIFunctionFactory.Create(CheckUserProfileStatus),
-                            AIFunctionFactory.Create(CheckRoadmapStatus),
-                            AIFunctionFactory.Create(StoreGeneratedRoadmap)
-                        ]
-                    );
+
+            Agent = new ChatClientAgent(
+                instrumentChatClient.ChatClient,
+                name: Name,
+                description: Description,
+                instructions: SystemMessage,
+                tools:
+                [
+                    plannerAgent.Agent.AsAIFunction(),
+                    structuringAgent.Agent.AsAIFunction(),
+                    refinementAgent.Agent.AsAIFunction(),
+                    AIFunctionFactory.Create(CheckUserProfileStatus),
+                    AIFunctionFactory.Create(CheckRoadmapStatus),
+                    AIFunctionFactory.Create(StoreGeneratedRoadmap)
+                ]);
         }
 
         public async Task<string> Invoke(string input)
