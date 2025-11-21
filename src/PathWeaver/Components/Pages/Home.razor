@@ -8,6 +8,7 @@
 @using System.Threading.Tasks
 @using PathWeaver.Agents
 @using PathWeaver.Agents.Interfaces
+@using Markdig
 @using PathWeaver.Models
 
 <PageTitle>PathWeaver - Your AI Learning Navigator</PageTitle>
@@ -63,7 +64,7 @@
                                     <div class="d-flex align-items-start @(message.IsFromUser ? "justify-content-end" : "")">
                                         <div class="message @(message.IsFromUser ? "user-message" : "agent-message")">
                                             <small class="text-muted">@(message.IsFromUser ? "You" : "AI Planner")</small>
-                                            <p class="mb-0">@message.Content</p>
+                                            <p class="mb-0">@((MarkupString)ConvertMarkdownToHtml(message.Content))</p>
                                             <small class="text-muted">@message.Timestamp.ToString("HH:mm")</small>
                                         </div>
                                     </div>
@@ -117,6 +118,57 @@
     .agent-message {
         background-color: white;
         border: 1px solid #dee2e6;
+    }
+    
+    /* Markdown content styling */
+    .message p {
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
+    }
+    
+    .message h1, .message h2, .message h3 {
+        font-size: 1.1em;
+        font-weight: 600;
+        margin: 0.5rem 0 0.25rem 0;
+    }
+    
+    .message ul, .message ol {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }
+    
+    .message li {
+        margin-bottom: 0.25rem;
+    }
+    
+    .message code {
+        background-color: #f8f9fa;
+        padding: 0.125rem 0.25rem;
+        border-radius: 0.25rem;
+        font-size: 0.875em;
+    }
+    
+    .message pre {
+        background-color: #f8f9fa;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        margin: 0.5rem 0;
+        overflow-x: auto;
+    }
+    
+    .message blockquote {
+        border-left: 3px solid #dee2e6;
+        padding-left: 0.75rem;
+        margin: 0.5rem 0;
+        font-style: italic;
+    }
+    
+    .message strong {
+        font-weight: 600;
+    }
+    
+    .message em {
+        font-style: italic;
     }
 </style>
 
@@ -260,5 +312,19 @@
         {
             await SendResponse();
         }
+    }
+
+    private string ConvertMarkdownToHtml(string markdown)
+    {
+        if (string.IsNullOrWhiteSpace(markdown))
+            return markdown;
+
+        // Configure Markdig pipeline for safe HTML conversion
+        var pipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .UseSoftlineBreakAsHardlineBreak() // Convert line breaks to <br>
+            .Build();
+
+        return Markdown.ToHtml(markdown, pipeline);
     }
 }
