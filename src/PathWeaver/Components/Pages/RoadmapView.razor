@@ -6,7 +6,9 @@
 
 <PageTitle>PathWeaver - Your Learning Roadmap</PageTitle>
 
-<div class="container mt-4">
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl md:max-w-6xl lg:max-w-7xl mx-auto">
     @if (roadmap == null)
     {
         <div class="alert alert-warning" role="alert">
@@ -154,6 +156,8 @@
             </div>
         }
     }
+        </div>
+    </div>
 </div>
 
 @code {
