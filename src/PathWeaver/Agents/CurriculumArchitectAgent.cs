@@ -76,19 +76,23 @@ namespace PathWeaver.Agents
         private readonly UserProfileService _userProfileService;
         private readonly RoadmapService _roadmapService;
         private readonly IAgentStatusService _statusService;
+        private readonly WebSearchService _webSearchService;
 
         public CurriculumArchitectAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, RoadmapService roadmapService,
-            IAgentStatusService statusService)
+            IAgentStatusService statusService, WebSearchService webSearchService)
         {
             _userProfileService = userProfileService;
             _roadmapService = roadmapService;
             _statusService = statusService;
+            _webSearchService = webSearchService;
             
             var tools = new List<AIFunction>
             {
                 AIFunctionFactory.Create(_roadmapService.GetRoadMapSummary),
                 AIFunctionFactory.Create(_roadmapService.GetAllModules),
-                AIFunctionFactory.Create(_roadmapService.GetModuleTopics)
+                AIFunctionFactory.Create(_roadmapService.GetModuleTopics),
+                AIFunctionFactory.Create(_webSearchService.SearchEducationalContent),
+                AIFunctionFactory.Create(_webSearchService.SearchBestPractices)
             };
             
             Agent = new ChatClientAgent(

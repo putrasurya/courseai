@@ -17,7 +17,11 @@ namespace PathWeaver.Agents
         public string Name => "SkillMappingAgent";
         public string Description => "Maps skills, career paths, and technology relationships in the job market";
         public string SystemMessage => """
-            You are a career and skill mapping specialist. Your expertise lies in understanding technology landscapes, career paths, and skill relationships in the modern job market.
+            You are a career and skill mapping specialist with web search capabilities. Your expertise lies in understanding technology landscapes, career paths, and skill relationships in the modern job market.
+
+            AVAILABLE TOOLS:
+            - **Best Practices Search**: Research current industry standards and best practices
+            - **Web Search**: Search for job market trends, skill requirements, and industry insights
 
             RESPONSIBILITIES:
             1. Map learning goals to relevant career paths and job roles
@@ -75,16 +79,25 @@ namespace PathWeaver.Agents
         public IList<AITool> Tools { get; } = [];
 
         private readonly UserProfileService _userProfileService;
+        private readonly WebSearchService _webSearchService;
 
-        public SkillMappingAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService)
+        public SkillMappingAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, WebSearchService webSearchService)
         {
             _userProfileService = userProfileService;
+            _webSearchService = webSearchService;
+            
+            var tools = new List<AIFunction>
+            {
+                AIFunctionFactory.Create(_webSearchService.SearchBestPractices),
+                AIFunctionFactory.Create(_webSearchService.SearchWeb)
+            };
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
-                instructions: SystemMessage);
+                instructions: SystemMessage,
+                tools: tools.ToArray());
         }
 
         public async Task<string> Invoke(string input)

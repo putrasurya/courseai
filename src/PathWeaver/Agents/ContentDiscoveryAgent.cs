@@ -17,7 +17,11 @@ namespace PathWeaver.Agents
         public string Name => "ContentDiscoveryAgent";
         public string Description => "Discovers and evaluates learning content across multiple platforms and formats";
         public string SystemMessage => """
-            You are a learning content discovery specialist. Your expertise lies in finding high-quality educational resources across multiple platforms and formats.
+            You are a learning content discovery specialist with web search capabilities. Your expertise lies in finding high-quality educational resources across multiple platforms and formats.
+
+            AVAILABLE TOOLS:
+            - **Web Search**: Search the internet for current tutorials, courses, and learning resources
+            - **Educational Content Search**: Specialized search for educational materials and tutorials
 
             RESPONSIBILITIES:
             1. Search and discover learning content across various platforms
@@ -71,16 +75,25 @@ namespace PathWeaver.Agents
         public IList<AITool> Tools { get; } = [];
 
         private readonly UserProfileService _userProfileService;
+        private readonly WebSearchService _webSearchService;
 
-        public ContentDiscoveryAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService)
+        public ContentDiscoveryAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, WebSearchService webSearchService)
         {
             _userProfileService = userProfileService;
+            _webSearchService = webSearchService;
+            
+            var tools = new List<AIFunction>
+            {
+                AIFunctionFactory.Create(_webSearchService.SearchEducationalContent),
+                AIFunctionFactory.Create(_webSearchService.SearchWeb)
+            };
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
-                instructions: SystemMessage);
+                instructions: SystemMessage,
+                tools: tools.ToArray());
         }
 
         public async Task<string> Invoke(string input)

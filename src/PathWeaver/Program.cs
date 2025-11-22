@@ -33,6 +33,8 @@ builder.Services.AddSingleton<IAgentStatusService, AgentStatusService>();
 builder.Services.AddSingleton<UserProfileService>();
 builder.Services.AddSingleton<UserProfileToolsService>();
 builder.Services.AddSingleton<RoadmapService>();
+builder.Services.AddHttpClient<WebSearchService>();
+builder.Services.AddSingleton<WebSearchService>();
 
 // Register core agents
 builder.Services.AddSingleton<IPlannerAgent, PlannerAgent>();
