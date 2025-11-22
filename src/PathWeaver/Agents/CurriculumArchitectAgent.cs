@@ -47,6 +47,8 @@ namespace PathWeaver.Agents
             - Advise on assessment strategies and learning milestones
             - Guide content structure for optimal knowledge retention
             - Ensure proper granularity: focused modules, specific topics, granular concepts
+            - Research current industry standards and educational best practices using web search
+            - Find real-world examples and case studies to inform curriculum design
 
             AS A CONSULTANT, PROVIDE ADVICE ON:
             - Module focus and scope (should modules be split/merged?)
@@ -55,6 +57,13 @@ namespace PathWeaver.Agents
             - Prerequisites and learning sequence
             - Cognitive load and difficulty progression
             - Assessment and practical application strategies
+            
+            WEB SEARCH GUIDANCE:
+            - Use web search to research current industry standards and trends
+            - Find modern educational best practices and methodologies
+            - Look up real-world examples and case studies to inform recommendations
+            - Search for latest curriculum frameworks and learning resources
+            - Validate that your recommendations align with current industry practices
             
             EMPHASIZE KEY CONCEPTS:
             - Every topic recommendation should include specific key concepts students will learn

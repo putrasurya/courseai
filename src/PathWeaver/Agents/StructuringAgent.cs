@@ -37,6 +37,7 @@ namespace PathWeaver.Agents
             AVAILABLE TOOLS:
             - **CurriculumArchitectAgent**: Applies educational theory and creates learning frameworks with proper granularity
             - **PathOptimizationAgent**: Optimizes learning sequences for efficiency and personalization
+            - **ResearchAgent**: Finds and curates learning resources for each module using web search capabilities
             - **RoadMap Tools**: Create, update, and manage the roadmap structure with modules, topics, and concepts
             - **UserProfile Tools**: Access user context for personalization
 
@@ -44,8 +45,9 @@ namespace PathWeaver.Agents
             1. Initialize new roadmap using user profile context
             2. Use CurriculumArchitectAgent to design focused modules and specific topics
             3. Use PathOptimizationAgent to optimize learning sequence and timing
-            4. Build roadmap structure ensuring proper granularity (focused modules → specific topics → granular concepts)
-            5. Finalize roadmap with proper status and validation
+            4. Use ResearchAgent to gather relevant learning resources for each module
+            5. Build roadmap structure ensuring proper granularity (focused modules → specific topics → granular concepts)
+            6. Finalize roadmap with proper status and validation
 
             WORKFLOW:
             1. Initialize roadmap with InitializeRoadMap using user profile summary
@@ -54,8 +56,9 @@ namespace PathWeaver.Agents
             4. Create FOCUSED modules using AddModule (e.g., "HTML Fundamentals", not "Frontend Development")
             5. Add SPECIFIC topics to modules using AddTopicToModule (e.g., "Semantic Elements", not "Advanced HTML")
             6. Add GRANULAR key concepts to topics using AddConceptToTopic - ENSURE 3-5 specific learning objectives per topic
-            7. Update roadmap status to 'InProgress' when complete
-            8. Return roadmap summary and analysis
+            7. Use ResearchAgent to find and curate learning resources for each module (tutorials, documentation, exercises)
+            8. Update roadmap status to 'InProgress' when complete
+            9. Return roadmap summary and analysis
 
             KEY CONCEPT EMPHASIS:
             - Each topic must have meaningful key concepts (specific learning objectives)
@@ -70,9 +73,16 @@ namespace PathWeaver.Agents
             - Ensure modules are focused skill areas, not broad domains
             - Convert learning objectives to specific, learnable topics
             - **Break down topics into 3-5 granular, actionable key concepts that define exactly what students will learn**
+            - Use ResearchAgent to find quality learning resources (tutorials, documentation, interactive exercises) for each module
             - Apply optimization timing to module duration estimates
             - Ensure proper ordering and dependencies
             - Key concepts must be concrete learning objectives (e.g., "Understand flexbox container properties" → "justify-content property values", "align-items behavior", "flex-direction options")
+
+            RESOURCE GATHERING:
+            - After creating each module, use ResearchAgent to find relevant learning resources
+            - Focus on high-quality, current resources that align with the module's learning objectives
+            - Include diverse resource types: tutorials, documentation, interactive exercises, video content
+            - Ensure resources match the user's skill level and learning preferences
 
             Always use the RoadMap tools to build the actual roadmap structure with proper granularity.
             """;
@@ -84,28 +94,28 @@ namespace PathWeaver.Agents
         private readonly ICurriculumArchitectAgent _curriculumArchitectAgent;
         private readonly IPathOptimizationAgent _pathOptimizationAgent;
         private readonly IAgentStatusService _statusService;
-        // private readonly IResearchAgent _researchAgent;
+        private readonly IResearchAgent _researchAgent;
 
         public StructuringAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
             UserProfileToolsService userProfileToolsService, RoadmapService roadmapService,
             ICurriculumArchitectAgent curriculumArchitectAgent,
             IPathOptimizationAgent pathOptimizationAgent,
-            IAgentStatusService statusService)
-            // IResearchAgent researchAgent)
+            IAgentStatusService statusService,
+            IResearchAgent researchAgent)
         {
             _userProfileService = userProfileService;
             _userProfileToolsService = userProfileToolsService;
             _roadmapService = roadmapService;
             _curriculumArchitectAgent = curriculumArchitectAgent;
             _pathOptimizationAgent = pathOptimizationAgent;
-            // _researchAgent = researchAgent;
+            _researchAgent = researchAgent;
             _statusService = statusService;
 
             var tools = new List<AIFunction>
             {
                 _curriculumArchitectAgent.Agent.AsAIFunction(),
-                _pathOptimizationAgent.Agent.AsAIFunction()
-                // _researchAgent.Agent.AsAIFunction()
+                _pathOptimizationAgent.Agent.AsAIFunction(),
+                _researchAgent.Agent.AsAIFunction()
             };
             
             // Add basic UserProfile tools (summary, status, basic updates)

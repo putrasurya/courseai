@@ -76,11 +76,13 @@ namespace PathWeaver.Agents
 
         private readonly UserProfileService _userProfileService;
         private readonly WebSearchService _webSearchService;
+        private readonly IAgentStatusService _statusService;
 
-        public ContentDiscoveryAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, WebSearchService webSearchService)
+        public ContentDiscoveryAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, WebSearchService webSearchService, IAgentStatusService statusService)
         {
             _userProfileService = userProfileService;
             _webSearchService = webSearchService;
+            _statusService = statusService;
             
             var tools = new List<AIFunction>
             {
@@ -98,11 +100,20 @@ namespace PathWeaver.Agents
 
         public async Task<string> Invoke(string input)
         {
-            // Access current user profile for personalized content discovery
-            var enhancedInput = $"User Profile Context: {_userProfileService.GetProfileSummary()}\n\nContent Discovery Request: {input}";
+            _statusService.SetStatus(Name, "🔍 Discovering learning content...");
             
-            var response = await Agent.RunAsync(enhancedInput, Thread);
-            return response.ToString();
+            try
+            {
+                // Access current user profile for personalized content discovery
+                var enhancedInput = $"User Profile Context: {_userProfileService.GetProfileSummary()}\n\nContent Discovery Request: {input}";
+                
+                var response = await Agent.RunAsync(enhancedInput, Thread);
+                return response.ToString();
+            }
+            finally
+            {
+                _statusService.ClearStatus();
+            }
         }
     }
 }

@@ -70,16 +70,19 @@ namespace PathWeaver.Agents
         private readonly IContentDiscoveryAgent _contentDiscoveryAgent;
         private readonly ISkillMappingAgent _skillMappingAgent;
         private readonly IResourceEvaluationAgent _resourceEvaluationAgent;
+        private readonly IAgentStatusService _statusService;
 
         public ResearchAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
             IContentDiscoveryAgent contentDiscoveryAgent,
             ISkillMappingAgent skillMappingAgent, 
-            IResourceEvaluationAgent resourceEvaluationAgent)
+            IResourceEvaluationAgent resourceEvaluationAgent,
+            IAgentStatusService statusService)
         {
             _userProfileService = userProfileService;
             _contentDiscoveryAgent = contentDiscoveryAgent;
             _skillMappingAgent = skillMappingAgent;
             _resourceEvaluationAgent = resourceEvaluationAgent;
+            _statusService = statusService;
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
@@ -95,9 +98,18 @@ namespace PathWeaver.Agents
 
         public async Task<string> Invoke(string input)
         {
-            // Use the Microsoft Agent Framework to coordinate specialized research agents
-            var response = await Agent.RunAsync(input, Thread);
-            return response.ToString();
+            _statusService.SetStatus(Name, "🔍 Researching learning resources...");
+            
+            try
+            {
+                // Use the Microsoft Agent Framework to coordinate specialized research agents
+                var response = await Agent.RunAsync(input, Thread);
+                return response.ToString();
+            }
+            finally
+            {
+                _statusService.ClearStatus();
+            }
         }
     }
 }

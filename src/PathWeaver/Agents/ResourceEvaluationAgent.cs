@@ -89,10 +89,12 @@ namespace PathWeaver.Agents
         public IList<AITool> Tools { get; } = [];
 
         private readonly UserProfileService _userProfileService;
+        private readonly IAgentStatusService _statusService;
 
-        public ResourceEvaluationAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService)
+        public ResourceEvaluationAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, IAgentStatusService statusService)
         {
             _userProfileService = userProfileService;
+            _statusService = statusService;
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
@@ -103,11 +105,20 @@ namespace PathWeaver.Agents
 
         public async Task<string> Invoke(string input)
         {
-            // Access current user profile for personalized evaluation
-            var enhancedInput = $"User Profile Context: {_userProfileService.GetProfileSummary()}\n\nResource Evaluation Request: {input}";
+            _statusService.SetStatus(Name, "⚖️ Evaluating resource quality...");
             
-            var response = await Agent.RunAsync(enhancedInput, Thread);
-            return response.ToString();
+            try
+            {
+                // Access current user profile for personalized evaluation
+                var enhancedInput = $"User Profile Context: {_userProfileService.GetProfileSummary()}\n\nResource Evaluation Request: {input}";
+                
+                var response = await Agent.RunAsync(enhancedInput, Thread);
+                return response.ToString();
+            }
+            finally
+            {
+                _statusService.ClearStatus();
+            }
         }
     }
 }
