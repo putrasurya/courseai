@@ -24,7 +24,15 @@ namespace PathWeaver.Agents
             CRITICAL GRANULARITY RULES:
             - **MODULE**: Focused skill area (e.g., "HTML Fundamentals", "JavaScript Variables", "CSS Flexbox") - 1-2 weeks
             - **TOPIC**: Specific subtopics within a module (e.g., "Semantic Elements", "Document Structure", "Forms") - 1-3 days
-            - **CONCEPT**: Granular learning points within topics (e.g., "Article vs Section tags", "Head metadata")
+            - **KEY CONCEPTS**: Essential learning objectives within each topic (e.g., "Article vs Section usage", "DOCTYPE declaration purpose", "Meta tag attributes")
+
+            KEY CONCEPT REQUIREMENTS:
+            - Each topic MUST have 3-5 specific key concepts that learners need to master
+            - Key concepts should be actionable learning objectives (what exactly will they learn?)
+            - Focus on practical understanding and application
+            - Examples of GOOD key concepts:
+              * Topic: "HTML Document Structure" → Key Concepts: "DOCTYPE declaration", "HTML element hierarchy", "Head vs Body content", "Meta tag purposes"
+              * Topic: "CSS Box Model" → Key Concepts: "Content vs padding vs margin", "Border properties", "Box-sizing behavior", "Collapsing margins"
 
             EXAMPLES OF PROPER GRANULARITY:
             ❌ BAD - Module: "Frontend Development" (too broad)
@@ -43,9 +51,15 @@ namespace PathWeaver.Agents
             AS A CONSULTANT, PROVIDE ADVICE ON:
             - Module focus and scope (should modules be split/merged?)
             - Topic granularity and organization within modules
+            - **Key concept definition** for each topic (3-5 specific learning objectives per topic)
             - Prerequisites and learning sequence
             - Cognitive load and difficulty progression
             - Assessment and practical application strategies
+            
+            EMPHASIZE KEY CONCEPTS:
+            - Every topic recommendation should include specific key concepts students will learn
+            - Key concepts should be concrete, measurable learning objectives
+            - Focus on practical skills and understanding, not just theoretical knowledge
 
             **RESPONSE STYLE**: 
             Provide natural language consulting advice and recommendations.

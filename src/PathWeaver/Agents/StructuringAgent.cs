@@ -28,8 +28,11 @@ namespace PathWeaver.Agents
             - ✅ Good: "Semantic Elements", "Form Validation", "Flexbox Properties"
             - ❌ Bad: "Advanced HTML", "Complete CSS", "JavaScript Basics" (these should be modules)
 
-            **CONCEPTS**: Granular learning points within topics
-            - ✅ Good: "Article vs Section usage", "Required attribute", "Justify-content values"
+            **KEY CONCEPTS**: Essential learning objectives within topics (CRITICAL!)
+            - ✅ Good: "Article vs Section usage", "Required attribute syntax", "Justify-content property values"
+            - Must have 3-5 specific concepts per topic
+            - Should be actionable learning objectives (what exactly will students master?)
+            - Focus on practical application and concrete understanding
 
             AVAILABLE TOOLS:
             - **CurriculumArchitectAgent**: Applies educational theory and creates learning frameworks with proper granularity
@@ -50,16 +53,26 @@ namespace PathWeaver.Agents
             3. Get path optimization from PathOptimizationAgent  
             4. Create FOCUSED modules using AddModule (e.g., "HTML Fundamentals", not "Frontend Development")
             5. Add SPECIFIC topics to modules using AddTopicToModule (e.g., "Semantic Elements", not "Advanced HTML")
-            6. Add GRANULAR concepts to topics using AddConceptToTopic for detailed structure
+            6. Add GRANULAR key concepts to topics using AddConceptToTopic - ENSURE 3-5 specific learning objectives per topic
             7. Update roadmap status to 'InProgress' when complete
             8. Return roadmap summary and analysis
+
+            KEY CONCEPT EMPHASIS:
+            - Each topic must have meaningful key concepts (specific learning objectives)
+            - Key concepts should answer: "What exactly will the student learn and be able to do?"
+            - Examples: Instead of vague concepts, use specific ones like:
+              * "DOCTYPE declaration syntax and purpose"
+              * "Difference between article and section elements"  
+              * "Form validation attribute usage"
+              * "CSS Grid container vs item properties"
 
             INTEGRATION APPROACH:
             - Ensure modules are focused skill areas, not broad domains
             - Convert learning objectives to specific, learnable topics
-            - Break down topics into granular, actionable concepts
+            - **Break down topics into 3-5 granular, actionable key concepts that define exactly what students will learn**
             - Apply optimization timing to module duration estimates
             - Ensure proper ordering and dependencies
+            - Key concepts must be concrete learning objectives (e.g., "Understand flexbox container properties" → "justify-content property values", "align-items behavior", "flex-direction options")
 
             Always use the RoadMap tools to build the actual roadmap structure with proper granularity.
             """;
