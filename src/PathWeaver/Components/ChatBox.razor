@@ -3,6 +3,7 @@
 @inject NavigationManager NavManager
 @inject PathWeaver.Services.RoadmapService RoadmapService
 @inject PathWeaver.Services.IAgentStatusService StatusService
+@inject IJSRuntime JSRuntime
 
 @using System.Text
 @using System.Threading.Tasks
@@ -53,7 +54,7 @@
                     </div>
                     <div class="card-body">
                         <!-- Conversation History -->
-                        <div class="conversation-history mb-3" style="max-height: 400px; overflow-y: auto;">
+                        <div @ref="conversationContainer" id="conversationContainer" class="conversation-history mb-3" style="max-height: 400px; overflow-y: auto;" @onscroll="OnScroll">
                             @foreach (var message in conversationHistory)
                             {
                                 <div class="mb-3">
@@ -217,6 +218,8 @@
     private string userResponse = "";
     private bool isPlanning = false;
     private bool isInConversation = false;
+    private ElementReference conversationContainer;
+    private bool isScrollDirty = false; // Track if user has scrolled up manually
 
     private List<ConversationMessage> conversationHistory = new();
 
@@ -245,6 +248,45 @@
         StatusService.OnStatusChanged -= OnStatusChanged;
     }
 
+    private void OnScroll()
+    {
+        // Check if user has scrolled up manually
+        InvokeAsync(async () =>
+        {
+            var scrollInfo = await GetScrollInfo();
+            isScrollDirty = scrollInfo.ScrollTop < (scrollInfo.ScrollHeight - scrollInfo.ClientHeight - 10);
+        });
+    }
+
+    private async Task<(double ScrollTop, double ScrollHeight, double ClientHeight)> GetScrollInfo()
+    {
+        try
+        {
+            var result = await JSRuntime.InvokeAsync<double[]>("getScrollInfo", conversationContainer);
+            return (result[0], result[1], result[2]);
+        }
+        catch
+        {
+            return (0, 0, 0);
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        if (!isScrollDirty)
+        {
+            await Task.Delay(50); // Small delay to ensure DOM is updated
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("scrollToBottom", conversationContainer);
+            }
+            catch
+            {
+                // Ignore scroll errors
+            }
+        }
+    }
+
     private async Task StartPlanning()
     {
         if (string.IsNullOrWhiteSpace(learningGoal))
@@ -264,6 +306,7 @@
                 IsFromUser = true
             });
             StateHasChanged();
+            await ScrollToBottom(); // Scroll after adding user message
 
             // Get agent response (non-streaming) - status will be handled by middleware
             var response = await Orchestrator.StartPlanning(learningGoal);
@@ -276,6 +319,7 @@
             };
             conversationHistory.Add(agentMessage);
             StateHasChanged();
+            await ScrollToBottom(); // Scroll after adding agent message
 
             // Check if the response indicates the profile is complete
             CheckIfProfileComplete(agentMessage.Content);
@@ -287,6 +331,8 @@
                 Content = $"Sorry, there was an error: {ex.Message}",
                 IsFromUser = false
             });
+            StateHasChanged();
+            await ScrollToBottom(); // Scroll after adding error message
         }
         finally
         {
@@ -309,9 +355,11 @@
                 IsFromUser = true
             });
             StateHasChanged();
+            await ScrollToBottom(); // Scroll after adding user message
 
             string currentResponse = userResponse;
             userResponse = ""; // Clear input
+            StateHasChanged(); // Update input field
 
             // Get agent response (non-streaming) - status will be handled by middleware
             var response = await Orchestrator.Invoke(currentResponse);
@@ -324,6 +372,7 @@
             };
             conversationHistory.Add(agentMessage);
             StateHasChanged();
+            await ScrollToBottom(); // Scroll after adding agent message
 
             // Check if the response indicates the profile is complete
             CheckIfProfileComplete(agentMessage.Content);
@@ -335,6 +384,8 @@
                 Content = $"Sorry, there was an error: {ex.Message}",
                 IsFromUser = false
             });
+            StateHasChanged();
+            await ScrollToBottom(); // Scroll after adding error message
         }
         finally
         {
