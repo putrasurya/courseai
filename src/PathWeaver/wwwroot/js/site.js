@@ -25,3 +25,10 @@ window.getScrollInfo = (element) => {
     }
     return [0, 0, 0];
 };
+
+// Focus element function
+window.focusElement = (element) => {
+    if (element && element.focus) {
+        element.focus();
+    }
+};

@@ -96,7 +96,7 @@
 
                         <!-- User Input for Conversation -->
                         <div class="input-group">
-                            <input @bind="userResponse" @onkeypress="HandleKeyPress" class="form-control" 
+                            <input @ref="userInputElement" @bind="userResponse" @onkeypress="HandleKeyPress" class="form-control" 
                                    placeholder="Type your response..." disabled="@StatusService.IsProcessing" />
                             <button @onclick="SendResponse" class="btn btn-outline-primary" disabled="@(StatusService.IsProcessing || string.IsNullOrWhiteSpace(userResponse))">
                                 <span>Send</span>
@@ -219,6 +219,7 @@
     private bool isPlanning = false;
     private bool isInConversation = false;
     private ElementReference conversationContainer;
+    private ElementReference userInputElement;
     private bool isScrollDirty = false; // Track if user has scrolled up manually
 
     private List<ConversationMessage> conversationHistory = new();
@@ -268,6 +269,19 @@
         catch
         {
             return (0, 0, 0);
+        }
+    }
+
+    private async Task FocusInput()
+    {
+        try
+        {
+            await Task.Delay(100); // Small delay to ensure the UI is updated
+            await userInputElement.FocusAsync();
+        }
+        catch
+        {
+            // Ignore focus errors
         }
     }
 
@@ -321,6 +335,9 @@
             StateHasChanged();
             await ScrollToBottom(); // Scroll after adding agent message
 
+            // Auto-focus the input after receiving agent response
+            await FocusInput();
+
             // Check if the response indicates the profile is complete
             CheckIfProfileComplete(agentMessage.Content);
         }
@@ -373,6 +390,9 @@
             conversationHistory.Add(agentMessage);
             StateHasChanged();
             await ScrollToBottom(); // Scroll after adding agent message
+
+            // Auto-focus the input after receiving agent response
+            await FocusInput();
 
             // Check if the response indicates the profile is complete
             CheckIfProfileComplete(agentMessage.Content);
