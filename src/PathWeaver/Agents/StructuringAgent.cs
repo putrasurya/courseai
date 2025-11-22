@@ -70,12 +70,14 @@ namespace PathWeaver.Agents
         private readonly RoadmapService _roadmapService;
         private readonly ICurriculumArchitectAgent _curriculumArchitectAgent;
         private readonly IPathOptimizationAgent _pathOptimizationAgent;
+        private readonly IAgentStatusService _statusService;
         // private readonly IResearchAgent _researchAgent;
 
         public StructuringAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
             UserProfileToolsService userProfileToolsService, RoadmapService roadmapService,
             ICurriculumArchitectAgent curriculumArchitectAgent,
-            IPathOptimizationAgent pathOptimizationAgent)
+            IPathOptimizationAgent pathOptimizationAgent,
+            IAgentStatusService statusService)
             // IResearchAgent researchAgent)
         {
             _userProfileService = userProfileService;
@@ -84,7 +86,8 @@ namespace PathWeaver.Agents
             _curriculumArchitectAgent = curriculumArchitectAgent;
             _pathOptimizationAgent = pathOptimizationAgent;
             // _researchAgent = researchAgent;
-            
+            _statusService = statusService;
+
             var tools = new List<AIFunction>
             {
                 _curriculumArchitectAgent.Agent.AsAIFunction(),
@@ -114,7 +117,24 @@ namespace PathWeaver.Agents
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools: tools.ToArray());
+                tools: tools.ToArray())
+                .AsBuilder()
+                .Use(runFunc:CustomAgentRunMiddleware, runStreamingFunc:null)
+                .Build();;
+        }
+        
+        async Task<AgentRunResponse> CustomAgentRunMiddleware(
+            IEnumerable<ChatMessage> messages,
+            AgentThread? thread,
+            AgentRunOptions? options,
+            AIAgent innerAgent,
+            CancellationToken cancellationToken)
+        {
+            _statusService.SetStatus("StructuringAgent", "Structuring your learning roadmap...");
+            var response = await innerAgent.RunAsync(messages, thread, options, cancellationToken).ConfigureAwait(false);
+            Console.WriteLine($"Agent Id: {innerAgent.Id}");
+            Console.WriteLine($"Agent Name: {innerAgent.Name}");
+            return response;
         }
 
         public async Task<string> Invoke(string input)

@@ -61,11 +61,14 @@ namespace PathWeaver.Agents
 
         private readonly UserProfileService _userProfileService;
         private readonly RoadmapService _roadmapService;
+        private readonly IAgentStatusService _statusService;
 
-        public PathOptimizationAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, RoadmapService roadmapService)
+        public PathOptimizationAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, RoadmapService roadmapService,
+            IAgentStatusService statusService)
         {
             _userProfileService = userProfileService;
             _roadmapService = roadmapService;
+            _statusService = statusService;
             
             var tools = new List<AIFunction>
             {
@@ -80,7 +83,24 @@ namespace PathWeaver.Agents
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools: tools.ToArray());
+                tools: tools.ToArray())
+                .AsBuilder()
+                .Use(runFunc:CustomAgentRunMiddleware, runStreamingFunc:null)
+                .Build();
+        }
+        
+        async Task<AgentRunResponse> CustomAgentRunMiddleware(
+            IEnumerable<ChatMessage> messages,
+            AgentThread? thread,
+            AgentRunOptions? options,
+            AIAgent innerAgent,
+            CancellationToken cancellationToken)
+        {
+            _statusService.SetStatus("PathOptimizationAgent", "Optimizing learning path...");
+            var response = await innerAgent.RunAsync(messages, thread, options, cancellationToken).ConfigureAwait(false);
+            Console.WriteLine($"Agent Id: {innerAgent.Id}");
+            Console.WriteLine($"Agent Name: {innerAgent.Name}");
+            return response;
         }
 
         public async Task<string> Invoke(string input)

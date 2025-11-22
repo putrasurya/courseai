@@ -20,16 +20,36 @@ namespace PathWeaver.Agents
         public IList<AITool> Tools { get; } = [];
 
         private readonly UserProfileService _userProfileService;
+        private readonly IAgentStatusService _statusService;
 
-        public RefinementAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService)
+        public RefinementAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
+            IAgentStatusService statusService)
         {
             _userProfileService = userProfileService;
+            _statusService = statusService;
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
-                instructions: SystemMessage);
+                instructions: SystemMessage)
+                .AsBuilder()
+                .Use(runFunc:CustomAgentRunMiddleware, runStreamingFunc:null)
+                .Build();
+        }
+        
+        async Task<AgentRunResponse> CustomAgentRunMiddleware(
+            IEnumerable<ChatMessage> messages,
+            AgentThread? thread,
+            AgentRunOptions? options,
+            AIAgent innerAgent,
+            CancellationToken cancellationToken)
+        {
+            _statusService.SetStatus("RefinementAgent", "Refining your learning roadmap...");
+            var response = await innerAgent.RunAsync(messages, thread, options, cancellationToken).ConfigureAwait(false);
+            Console.WriteLine($"Agent Id: {innerAgent.Id}");
+            Console.WriteLine($"Agent Name: {innerAgent.Name}");
+            return response;
         }
 
         public async Task<string> Invoke(string input)

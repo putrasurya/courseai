@@ -7,7 +7,7 @@ using PathWeaver.Agents.Interfaces;
 using PathWeaver.Components;
 using PathWeaver.Models;
 using PathWeaver.Services;
-using PathWeaver.Middleware;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,9 +25,6 @@ builder.Services.Configure<AzureOpenAIOptions>(
 
 // Register Instrumented Chat Client
 builder.Services.AddSingleton<InstrumentChatClient>();
-
-// Register Processing Status Service
-// Remove ProcessingStatusService registration since we're using IAgentStatusService
 
 // Register Agent Status Service
 builder.Services.AddSingleton<IAgentStatusService, AgentStatusService>();
@@ -59,7 +56,7 @@ builder.Services.AddSingleton<IOrchestratorAgent, OrchestratorAgent>();
 // Configure OpenTelemetry and Aspire
 var resourceBuilder = ResourceBuilder
     .CreateDefault()
-    .AddService("PathWeaver");
+    .AddService("MyApplication");
 
 using var tracerProvider = Sdk.CreateTracerProviderBuilder()
     .SetResourceBuilder(resourceBuilder)

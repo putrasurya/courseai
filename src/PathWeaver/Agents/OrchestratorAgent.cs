@@ -9,7 +9,7 @@ using OpenAI;
 using System.ComponentModel;
 using PathWeaver.Agents.Interfaces;
 using PathWeaver.Helpers;
-using PathWeaver.Middleware;
+
 
 namespace PathWeaver.Agents
 {
@@ -101,20 +101,37 @@ namespace PathWeaver.Agents
             
             // Add UserProfile tools (minimal - only summary and status check)
             orchestratorTools.AddRange(_userProfileToolsService.GetOrchestratorTools());
-
+            
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools: orchestratorTools.ToArray());
+                tools: orchestratorTools.ToArray())
+                .AsBuilder()
+                .Use(runFunc:CustomAgentRunMiddleware, runStreamingFunc:null)
+                .Build();
+        }
+        
+        async Task<AgentRunResponse> CustomAgentRunMiddleware(
+            IEnumerable<ChatMessage> messages,
+            AgentThread? thread,
+            AgentRunOptions? options,
+            AIAgent innerAgent,
+            CancellationToken cancellationToken)
+        {
+            _statusService.SetStatus("OrchestratorAgent", "Coordinating your learning journey...");
+            var response = await innerAgent.RunAsync(messages, thread, options, cancellationToken).ConfigureAwait(false);
+            Console.WriteLine($"Agent Id: {innerAgent.Id}");
+            Console.WriteLine($"Agent Name: {innerAgent.Name}");
+            return response;
         }
 
         public async Task<string> Invoke(string input)
         {
             try
             {
-                _statusService.SetStatus("OrchestratorAgent", "Coordinating your learning journey...");
+                // _statusService.SetStatus("OrchestratorAgent", "Coordinating your learning journey...");
                 
                 // Let the AI Agent handle all orchestration decisions
                 var response = await Agent.RunAsync(input, Thread);

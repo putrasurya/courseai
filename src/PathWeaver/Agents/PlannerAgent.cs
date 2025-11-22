@@ -42,18 +42,39 @@ namespace PathWeaver.Agents
 
         private readonly UserProfileService _userProfileService;
         private readonly UserProfileToolsService _userProfileToolsService;
+        private readonly IAgentStatusService _statusService;
 
-        public PlannerAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, UserProfileToolsService userProfileToolsService)
+        public PlannerAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, UserProfileToolsService userProfileToolsService,
+            IAgentStatusService statusService)
         {
             _userProfileService = userProfileService;
             _userProfileToolsService = userProfileToolsService;
+            _statusService = statusService;
             
             Agent = new ChatClientAgent(
                 instrumentChatClient.ChatClient,
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools: _userProfileToolsService.GetPlannerTools());
+                tools: _userProfileToolsService.GetPlannerTools())
+                .AsBuilder()
+                .Use(runFunc:CustomAgentRunMiddleware, runStreamingFunc:null)
+                .Build();;
+        }
+        
+        async Task<AgentRunResponse> CustomAgentRunMiddleware(
+            IEnumerable<ChatMessage> messages,
+            AgentThread? thread,
+            AgentRunOptions? options,
+            AIAgent innerAgent,
+            CancellationToken cancellationToken)
+        {
+            _statusService.SetStatus("PlannerAgent", "Gathering your learning profile...");
+            await Task.Delay(1000);
+            var response = await innerAgent.RunAsync(messages, thread, options, cancellationToken).ConfigureAwait(false);
+            Console.WriteLine($"Agent Id: {innerAgent.Id}");
+            Console.WriteLine($"Agent Name: {innerAgent.Name}");
+            return response;
         }
 
         public async Task<string> Invoke(string input)
