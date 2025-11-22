@@ -8,6 +8,8 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using System.ComponentModel;
 using PathWeaver.Agents.Interfaces;
+using PathWeaver.Helpers;
+using PathWeaver.Middleware;
 
 namespace PathWeaver.Agents
 {
@@ -69,6 +71,7 @@ namespace PathWeaver.Agents
         private readonly UserProfileService _userProfileService;
         private readonly RoadmapService _roadmapService;
         private readonly UserProfileToolsService _userProfileToolsService;
+        private readonly IAgentStatusService _statusService;
 
         public OrchestratorAgent(
             InstrumentChatClient instrumentChatClient,
@@ -77,7 +80,8 @@ namespace PathWeaver.Agents
             IRefinementAgent refinementAgent,
             UserProfileService userProfileService,
             RoadmapService roadmapService,
-            UserProfileToolsService userProfileToolsService)
+            UserProfileToolsService userProfileToolsService,
+            IAgentStatusService statusService)
         {
             _plannerAgent = plannerAgent;
             _structuringAgent = structuringAgent;
@@ -85,6 +89,7 @@ namespace PathWeaver.Agents
             _userProfileService = userProfileService;
             _roadmapService = roadmapService;
             _userProfileToolsService = userProfileToolsService;
+            _statusService = statusService;
 
             var orchestratorTools = new List<AIFunction>
             {
@@ -109,6 +114,8 @@ namespace PathWeaver.Agents
         {
             try
             {
+                _statusService.SetStatus("OrchestratorAgent", "Coordinating your learning journey...");
+                
                 // Let the AI Agent handle all orchestration decisions
                 var response = await Agent.RunAsync(input, Thread);
                 return response.ToString();
@@ -116,6 +123,10 @@ namespace PathWeaver.Agents
             catch (Exception ex)
             {
                 return $"I encountered an error while processing your request: {ex.Message}. Please try again.";
+            }
+            finally
+            {
+                _statusService.ClearStatus();
             }
         }
 
