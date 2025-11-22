@@ -37,7 +37,7 @@ namespace PathWeaver.Agents
             AVAILABLE TOOLS:
             - **CurriculumArchitectAgent**: Applies educational theory and creates learning frameworks with proper granularity
             - **PathOptimizationAgent**: Optimizes learning sequences for efficiency and personalization
-            - **ResearchAgent**: Finds and curates learning resources for each module using web search capabilities
+            - **ResourceGatheringAgent**: Finds and curates learning resources for each module using web search capabilities
             - **RoadMap Tools**: Create, update, and manage the roadmap structure with modules, topics, and concepts
             - **Quality Validation Tools**: ValidateRoadmapQuality, GetTopicsNeedingConcepts, and GetModulesNeedingTopics to ensure completeness
             - **UserProfile Tools**: Access user context for personalization
@@ -46,7 +46,7 @@ namespace PathWeaver.Agents
             1. Initialize new roadmap using user profile context
             2. Use CurriculumArchitectAgent to design focused modules and specific topics
             3. Use PathOptimizationAgent to optimize learning sequence and timing
-            4. Use ResearchAgent to gather relevant learning resources for each module
+            4. Use ResourceGatheringAgent to find and curate learning resources for each module
             5. Build roadmap structure ensuring proper granularity (focused modules → specific topics → granular concepts)
             6. Finalize roadmap with proper status and validation
 
@@ -59,9 +59,11 @@ namespace PathWeaver.Agents
             6. **MANDATORY**: Add GRANULAR key concepts to topics using AddConceptToTopic - EVERY topic MUST have 3-5 specific learning objectives
             7. **VALIDATION**: Use ValidateRoadmapQuality, GetTopicsNeedingConcepts, and GetModulesNeedingTopics to check for missing topics or key concepts
             8. **QUALITY ASSURANCE**: If validation fails, fix missing topics or key concepts immediately before continuing
-            9. Use ResearchAgent to find and curate learning resources for each module (tutorials, documentation, exercises)
-            10. Update roadmap status to 'InProgress' when complete and all modules have topics with key concepts
-            11. Return roadmap summary and analysis
+            9. Use ResourceGatheringAgent to find and curate learning resources for each module (tutorials, documentation, exercises)
+            10. **MANDATORY**: Add resources to modules using AddResourcesToModule - EVERY module MUST have resources
+            11. **RESOURCE VALIDATION**: Use GetModulesNeedingResources to check for missing resources  
+            12. Update roadmap status to 'InProgress' when complete and all modules have topics with key concepts and resources
+            13. Return roadmap summary and analysis
 
             KEY CONCEPT EMPHASIS:
             - Each topic must have meaningful key concepts (specific learning objectives)
@@ -83,13 +85,14 @@ namespace PathWeaver.Agents
             - Ensure proper ordering and dependencies
             - Key concepts must be concrete learning objectives (e.g., "Understand flexbox container properties" → "justify-content property values", "align-items behavior", "flex-direction options")
 
-            **CRITICAL RULE**: NO MODULE SHALL BE LEFT WITHOUT TOPICS. NO TOPIC SHALL BE LEFT WITHOUT KEY CONCEPTS. Verify completion before proceeding.
+            **CRITICAL RULE**: NO MODULE SHALL BE LEFT WITHOUT TOPICS. NO TOPIC SHALL BE LEFT WITHOUT KEY CONCEPTS. NO MODULE SHALL BE LEFT WITHOUT RESOURCES. Verify completion before proceeding.
 
             RESOURCE GATHERING:
-            - After creating each module, use ResearchAgent to find relevant learning resources
+            - After creating each module, use ResourceGatheringAgent to find relevant learning resources
             - Focus on high-quality, current resources that align with the module's learning objectives
             - Include diverse resource types: tutorials, documentation, interactive exercises, video content
             - Ensure resources match the user's skill level and learning preferences
+            - **MANDATORY**: Every module must have resources - use quality validation to enforce this
 
             Always use the RoadMap tools to build the actual roadmap structure with proper granularity.
             """;
@@ -98,31 +101,31 @@ namespace PathWeaver.Agents
         private readonly UserProfileService _userProfileService;
         private readonly UserProfileToolsService _userProfileToolsService;
         private readonly RoadmapService _roadmapService;
+        private readonly ResourceGatheringAgent _resourceGatheringAgent;
         private readonly ICurriculumArchitectAgent _curriculumArchitectAgent;
         private readonly IPathOptimizationAgent _pathOptimizationAgent;
         private readonly IAgentStatusService _statusService;
-        private readonly IResearchAgent _researchAgent;
 
         public StructuringAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
             UserProfileToolsService userProfileToolsService, RoadmapService roadmapService,
             ICurriculumArchitectAgent curriculumArchitectAgent,
             IPathOptimizationAgent pathOptimizationAgent,
             IAgentStatusService statusService,
-            IResearchAgent researchAgent)
+            ResourceGatheringAgent resourceGatheringAgent)
         {
             _userProfileService = userProfileService;
             _userProfileToolsService = userProfileToolsService;
             _roadmapService = roadmapService;
             _curriculumArchitectAgent = curriculumArchitectAgent;
             _pathOptimizationAgent = pathOptimizationAgent;
-            _researchAgent = researchAgent;
+            _resourceGatheringAgent = resourceGatheringAgent;
             _statusService = statusService;
 
             var tools = new List<AIFunction>
             {
                 _curriculumArchitectAgent.Agent.AsAIFunction(),
                 _pathOptimizationAgent.Agent.AsAIFunction(),
-                _researchAgent.Agent.AsAIFunction()
+                AIFunctionFactory.Create(_resourceGatheringAgent.GatherResourcesForModuleAsync)
             };
             
             // Add basic UserProfile tools (summary, status, basic updates)
@@ -135,13 +138,15 @@ namespace PathWeaver.Agents
                 AIFunctionFactory.Create(_roadmapService.AddModule),
                 AIFunctionFactory.Create(_roadmapService.AddTopicToModule),
                 AIFunctionFactory.Create(_roadmapService.AddConceptToTopic),
+                AIFunctionFactory.Create(_roadmapService.AddResourcesToModule),
                 AIFunctionFactory.Create(_roadmapService.UpdateRoadMapStatus),
                 AIFunctionFactory.Create(_roadmapService.GetRoadMapSummary),
                 AIFunctionFactory.Create(_roadmapService.GetAllModules),
                 AIFunctionFactory.Create(_roadmapService.GetRoadMapAnalysis),
                 AIFunctionFactory.Create(_roadmapService.ValidateRoadmapQuality),
                 AIFunctionFactory.Create(_roadmapService.GetTopicsNeedingConcepts),
-                AIFunctionFactory.Create(_roadmapService.GetModulesNeedingTopics)
+                AIFunctionFactory.Create(_roadmapService.GetModulesNeedingTopics),
+                AIFunctionFactory.Create(_roadmapService.GetModulesNeedingResources)
             };
             tools.AddRange(roadMapToolsList);
             

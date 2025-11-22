@@ -358,10 +358,10 @@ public class RoadmapService
     }
 
     /// <summary>
-    /// Validates that all modules have topics and all topics have key concepts
+    /// Validates that all modules have topics, all topics have key concepts, and all modules have resources
     /// </summary>
-    /// <returns>Validation report with any missing topics or key concepts</returns>
-    [Description("Validates roadmap quality by checking that all modules have topics and all topics have key concepts")]
+    /// <returns>Validation report with any missing topics, key concepts, or resources</returns>
+    [Description("Validates roadmap quality by checking that all modules have topics, all topics have key concepts, and all modules have resources")]
     public string ValidateRoadmapQuality()
     {
         if (_roadmap == null)
@@ -372,6 +372,7 @@ public class RoadmapService
         var issues = new List<string>();
         var modulesWithoutTopics = new List<string>();
         var topicsWithoutConcepts = new List<string>();
+        var modulesWithoutResources = new List<string>();
 
         foreach (var module in _roadmap.Modules)
         {
@@ -395,6 +396,12 @@ public class RoadmapService
                     }
                 }
             }
+
+            // Check if module has no resources
+            if (module.Resources == null || !module.Resources.Any())
+            {
+                modulesWithoutResources.Add($"Module '{module.Title}'");
+            }
         }
 
         if (modulesWithoutTopics.Any())
@@ -409,9 +416,15 @@ public class RoadmapService
             issues.AddRange(topicsWithoutConcepts);
         }
 
+        if (modulesWithoutResources.Any())
+        {
+            issues.Add("CRITICAL: Modules without any resources:");
+            issues.AddRange(modulesWithoutResources);
+        }
+
         if (!issues.Any())
         {
-            return "✅ Roadmap validation passed: All modules have topics and all topics have appropriate key concepts.";
+            return "✅ Roadmap validation passed: All modules have topics, all topics have appropriate key concepts, and all modules have resources.";
         }
 
         return $"❌ Roadmap validation issues found:\n{string.Join("\n", issues)}";
@@ -479,5 +492,73 @@ public class RoadmapService
         }
 
         return $"Modules needing topics:\n{string.Join("\n", modulesNeedingTopics)}";
+    }
+
+    /// <summary>
+    /// Adds learning resources to a specific module
+    /// </summary>
+    /// <param name="moduleTitle">The title of the module</param>
+    /// <param name="resourcesDescription">Description of the learning resources to add</param>
+    /// <returns>Success message</returns>
+    [Description("Adds learning resources to a specific module")]
+    public string AddResourcesToModule(string moduleTitle, string resourcesDescription)
+    {
+        if (_roadmap == null)
+        {
+            return "No roadmap exists. Please initialize the roadmap first.";
+        }
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title?.Equals(moduleTitle, StringComparison.OrdinalIgnoreCase) == true);
+        if (module == null)
+        {
+            return $"Module '{moduleTitle}' not found.";
+        }
+
+        if (module.Resources == null)
+        {
+            module.Resources = new List<LearningResource>();
+        }
+
+        // Create a learning resource from the description
+        var resource = new LearningResource
+        {
+            Title = $"Resources for {moduleTitle}",
+            Description = resourcesDescription,
+            Type = ResourceType.Article, // Default type, can be changed later
+            Url = string.Empty // Will be populated later when specific resources are identified
+        };
+
+        module.Resources.Add(resource);
+        return $"Resources added to module '{moduleTitle}' successfully.";
+    }
+
+    /// <summary>
+    /// Gets a list of modules that have no resources
+    /// </summary>
+    /// <returns>List of modules needing resources</returns>
+    [Description("Gets modules that need resources added")]
+    public string GetModulesNeedingResources()
+    {
+        if (_roadmap == null)
+        {
+            return "No roadmap exists.";
+        }
+
+        var modulesNeedingResources = new List<string>();
+
+        foreach (var module in _roadmap.Modules)
+        {
+            if (module.Resources == null || !module.Resources.Any())
+            {
+                modulesNeedingResources.Add($"Module: '{module.Title}' | Current Resources: 0");
+            }
+        }
+
+        if (!modulesNeedingResources.Any())
+        {
+            return "✅ All modules have resources.";
+        }
+
+        return $"Modules needing resources:\n{string.Join("\n", modulesNeedingResources)}";
     }
 }

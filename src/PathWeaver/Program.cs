@@ -44,13 +44,9 @@ builder.Services.AddSingleton<IRefinementAgent, RefinementAgent>();
 builder.Services.AddSingleton<IStructuringAgent, StructuringAgent>();
 
 // Register specialized sub-agents (used as tools by main agents)
-builder.Services.AddSingleton<IResearchAgent, ResearchAgent>();
-builder.Services.AddSingleton<IContentDiscoveryAgent, ContentDiscoveryAgent>();
-builder.Services.AddSingleton<ISkillMappingAgent, SkillMappingAgent>();
-builder.Services.AddSingleton<IResourceEvaluationAgent, ResourceEvaluationAgent>();
+builder.Services.AddSingleton<ResourceGatheringAgent>();
 builder.Services.AddSingleton<ICurriculumArchitectAgent, CurriculumArchitectAgent>();
 builder.Services.AddSingleton<IPathOptimizationAgent, PathOptimizationAgent>();
-builder.Services.AddSingleton<IExperienceDesignAgent, ExperienceDesignAgent>();
 
 // Register main coordinator
 builder.Services.AddSingleton<IOrchestratorAgent, OrchestratorAgent>();
