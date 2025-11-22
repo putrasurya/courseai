@@ -358,10 +358,10 @@ public class RoadmapService
     }
 
     /// <summary>
-    /// Validates that all topics have key concepts and returns validation report
+    /// Validates that all modules have topics and all topics have key concepts
     /// </summary>
-    /// <returns>Validation report with any missing key concepts</returns>
-    [Description("Validates roadmap quality by checking that all topics have key concepts")]
+    /// <returns>Validation report with any missing topics or key concepts</returns>
+    [Description("Validates roadmap quality by checking that all modules have topics and all topics have key concepts")]
     public string ValidateRoadmapQuality()
     {
         if (_roadmap == null)
@@ -370,21 +370,37 @@ public class RoadmapService
         }
 
         var issues = new List<string>();
+        var modulesWithoutTopics = new List<string>();
         var topicsWithoutConcepts = new List<string>();
 
         foreach (var module in _roadmap.Modules)
         {
-            foreach (var topic in module.Topics)
+            // Check if module has no topics
+            if (module.Topics == null || !module.Topics.Any())
             {
-                if (topic.Concepts == null || !topic.Concepts.Any())
+                modulesWithoutTopics.Add($"Module '{module.Title}'");
+            }
+            else
+            {
+                // Check topics for key concepts
+                foreach (var topic in module.Topics)
                 {
-                    topicsWithoutConcepts.Add($"Module '{module.Title}' > Topic '{topic.Title}'");
-                }
-                else if (topic.Concepts.Count < 3)
-                {
-                    issues.Add($"Module '{module.Title}' > Topic '{topic.Title}' has only {topic.Concepts.Count} key concepts (should have 3-5)");
+                    if (topic.Concepts == null || !topic.Concepts.Any())
+                    {
+                        topicsWithoutConcepts.Add($"Module '{module.Title}' > Topic '{topic.Title}'");
+                    }
+                    else if (topic.Concepts.Count < 3)
+                    {
+                        issues.Add($"Module '{module.Title}' > Topic '{topic.Title}' has only {topic.Concepts.Count} key concepts (should have 3-5)");
+                    }
                 }
             }
+        }
+
+        if (modulesWithoutTopics.Any())
+        {
+            issues.Add("CRITICAL: Modules without any topics:");
+            issues.AddRange(modulesWithoutTopics);
         }
 
         if (topicsWithoutConcepts.Any())
@@ -395,7 +411,7 @@ public class RoadmapService
 
         if (!issues.Any())
         {
-            return "✅ Roadmap validation passed: All topics have appropriate key concepts.";
+            return "✅ Roadmap validation passed: All modules have topics and all topics have appropriate key concepts.";
         }
 
         return $"❌ Roadmap validation issues found:\n{string.Join("\n", issues)}";
@@ -433,5 +449,35 @@ public class RoadmapService
         }
 
         return $"Topics needing key concepts (should have 3-5 each):\n{string.Join("\n", topicsNeedingConcepts)}";
+    }
+
+    /// <summary>
+    /// Gets a list of modules that have no topics
+    /// </summary>
+    /// <returns>List of modules needing topics</returns>
+    [Description("Gets modules that need topics added")]
+    public string GetModulesNeedingTopics()
+    {
+        if (_roadmap == null)
+        {
+            return "No roadmap exists.";
+        }
+
+        var modulesNeedingTopics = new List<string>();
+
+        foreach (var module in _roadmap.Modules)
+        {
+            if (module.Topics == null || !module.Topics.Any())
+            {
+                modulesNeedingTopics.Add($"Module: '{module.Title}' | Current Topics: 0");
+            }
+        }
+
+        if (!modulesNeedingTopics.Any())
+        {
+            return "✅ All modules have topics.";
+        }
+
+        return $"Modules needing topics:\n{string.Join("\n", modulesNeedingTopics)}";
     }
 }

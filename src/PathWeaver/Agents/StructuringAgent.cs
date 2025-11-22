@@ -39,7 +39,7 @@ namespace PathWeaver.Agents
             - **PathOptimizationAgent**: Optimizes learning sequences for efficiency and personalization
             - **ResearchAgent**: Finds and curates learning resources for each module using web search capabilities
             - **RoadMap Tools**: Create, update, and manage the roadmap structure with modules, topics, and concepts
-            - **Quality Validation Tools**: ValidateRoadmapQuality and GetTopicsNeedingConcepts to ensure completeness
+            - **Quality Validation Tools**: ValidateRoadmapQuality, GetTopicsNeedingConcepts, and GetModulesNeedingTopics to ensure completeness
             - **UserProfile Tools**: Access user context for personalization
 
             COORDINATION STRATEGY:
@@ -57,10 +57,10 @@ namespace PathWeaver.Agents
             4. Create FOCUSED modules using AddModule (e.g., "HTML Fundamentals", not "Frontend Development")
             5. Add SPECIFIC topics to modules using AddTopicToModule (e.g., "Semantic Elements", not "Advanced HTML")
             6. **MANDATORY**: Add GRANULAR key concepts to topics using AddConceptToTopic - EVERY topic MUST have 3-5 specific learning objectives
-            7. **VALIDATION**: Use ValidateRoadmapQuality and GetTopicsNeedingConcepts to check for missing key concepts
-            8. **QUALITY ASSURANCE**: If validation fails, fix missing key concepts immediately before continuing
+            7. **VALIDATION**: Use ValidateRoadmapQuality, GetTopicsNeedingConcepts, and GetModulesNeedingTopics to check for missing topics or key concepts
+            8. **QUALITY ASSURANCE**: If validation fails, fix missing topics or key concepts immediately before continuing
             9. Use ResearchAgent to find and curate learning resources for each module (tutorials, documentation, exercises)
-            10. Update roadmap status to 'InProgress' when complete and all topics have key concepts
+            10. Update roadmap status to 'InProgress' when complete and all modules have topics with key concepts
             11. Return roadmap summary and analysis
 
             KEY CONCEPT EMPHASIS:
@@ -83,7 +83,7 @@ namespace PathWeaver.Agents
             - Ensure proper ordering and dependencies
             - Key concepts must be concrete learning objectives (e.g., "Understand flexbox container properties" → "justify-content property values", "align-items behavior", "flex-direction options")
 
-            **CRITICAL RULE**: NO TOPIC SHALL BE LEFT WITHOUT KEY CONCEPTS. Verify completion before proceeding to next module.
+            **CRITICAL RULE**: NO MODULE SHALL BE LEFT WITHOUT TOPICS. NO TOPIC SHALL BE LEFT WITHOUT KEY CONCEPTS. Verify completion before proceeding.
 
             RESOURCE GATHERING:
             - After creating each module, use ResearchAgent to find relevant learning resources
@@ -140,7 +140,8 @@ namespace PathWeaver.Agents
                 AIFunctionFactory.Create(_roadmapService.GetAllModules),
                 AIFunctionFactory.Create(_roadmapService.GetRoadMapAnalysis),
                 AIFunctionFactory.Create(_roadmapService.ValidateRoadmapQuality),
-                AIFunctionFactory.Create(_roadmapService.GetTopicsNeedingConcepts)
+                AIFunctionFactory.Create(_roadmapService.GetTopicsNeedingConcepts),
+                AIFunctionFactory.Create(_roadmapService.GetModulesNeedingTopics)
             };
             tools.AddRange(roadMapToolsList);
             

@@ -398,4 +398,91 @@ public class RoadmapServiceTests
         // Assert
         Assert.Contains("✅ All topics have sufficient key concepts", result);
     }
+
+    [Fact]
+    public void ValidateRoadmapQuality_ShouldFailValidation_WhenModuleHasNoTopics()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("HTML Basics", "Learn HTML", 20);
+        // Note: Not adding any topics to the module
+
+        // Act
+        var result = _roadmapService.ValidateRoadmapQuality();
+
+        // Assert
+        Assert.Contains("CRITICAL: Modules without any topics:", result);
+        Assert.Contains("Module 'HTML Basics'", result);
+        Assert.Contains("❌ Roadmap validation issues found:", result);
+    }
+
+    [Fact]
+    public void ValidateRoadmapQuality_ShouldFailValidation_WhenTopicHasNoConcepts()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("HTML Basics", "Learn HTML", 20);
+        _roadmapService.AddTopicToModule("HTML Basics", "HTML Tags", "Learn about HTML tags", 50);
+        // Note: Not adding any concepts to the topic
+
+        // Act
+        var result = _roadmapService.ValidateRoadmapQuality();
+
+        // Assert
+        Assert.Contains("CRITICAL: Topics without any key concepts:", result);
+        Assert.Contains("Module 'HTML Basics' > Topic 'HTML Tags'", result);
+        Assert.Contains("❌ Roadmap validation issues found:", result);
+    }
+
+    [Fact]
+    public void ValidateRoadmapQuality_ShouldPassValidation_WhenAllModulesHaveTopicsWithConcepts()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("HTML Basics", "Learn HTML", 20);
+        _roadmapService.AddTopicToModule("HTML Basics", "HTML Tags", "Learn about HTML tags", 50);
+        _roadmapService.AddConceptToTopic("HTML Basics", "HTML Tags", "div element", "Block-level container");
+        _roadmapService.AddConceptToTopic("HTML Basics", "HTML Tags", "span element", "Inline container");
+        _roadmapService.AddConceptToTopic("HTML Basics", "HTML Tags", "p element", "Paragraph element");
+
+        // Act
+        var result = _roadmapService.ValidateRoadmapQuality();
+
+        // Assert
+        Assert.Contains("✅ Roadmap validation passed", result);
+        Assert.Contains("All modules have topics and all topics have appropriate key concepts", result);
+    }
+
+    [Fact]
+    public void GetModulesNeedingTopics_ShouldReturnEmptyModules()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("HTML Basics", "Learn HTML", 20);
+        _roadmapService.AddModule("CSS Basics", "Learn CSS", 25);
+        _roadmapService.AddTopicToModule("HTML Basics", "HTML Tags", "Learn about HTML tags", 50);
+        // Note: CSS Basics module has no topics
+
+        // Act
+        var result = _roadmapService.GetModulesNeedingTopics();
+
+        // Assert
+        Assert.Contains("Module: 'CSS Basics' | Current Topics: 0", result);
+        Assert.DoesNotContain("HTML Basics", result);
+    }
+
+    [Fact]
+    public void GetModulesNeedingTopics_ShouldReturnSuccessMessage_WhenAllModulesHaveTopics()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("HTML Basics", "Learn HTML", 20);
+        _roadmapService.AddTopicToModule("HTML Basics", "HTML Tags", "Learn about HTML tags", 50);
+
+        // Act
+        var result = _roadmapService.GetModulesNeedingTopics();
+
+        // Assert
+        Assert.Equal("✅ All modules have topics.", result);
+    }
 }
