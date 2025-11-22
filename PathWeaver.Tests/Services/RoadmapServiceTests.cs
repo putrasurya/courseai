@@ -326,4 +326,76 @@ public class RoadmapServiceTests
         Assert.Contains("Total Modules: 2", result);
         Assert.Contains("Total Topics: 2", result);
     }
+
+    [Fact]
+    public void ValidateRoadmapQuality_WithAllTopicsHavingConcepts_ReturnsSuccess()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("Module 1", "Description", 10);
+        _roadmapService.AddTopicToModule("Module 1", "Topic 1", "Description", 75);
+        _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 1", "Description 1");
+        _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 2", "Description 2");
+        _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 3", "Description 3");
+
+        // Act
+        var result = _roadmapService.ValidateRoadmapQuality();
+
+        // Assert
+        Assert.Contains("✅ Roadmap validation passed", result);
+    }
+
+    [Fact]
+    public void ValidateRoadmapQuality_WithTopicsMissingConcepts_ReturnsValidationErrors()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("Module 1", "Description", 10);
+        _roadmapService.AddTopicToModule("Module 1", "Topic 1", "Description", 75);
+        // Not adding any concepts
+
+        // Act
+        var result = _roadmapService.ValidateRoadmapQuality();
+
+        // Assert
+        Assert.Contains("❌ Roadmap validation issues found", result);
+        Assert.Contains("CRITICAL: Topics without any key concepts", result);
+        Assert.Contains("Module 'Module 1' > Topic 'Topic 1'", result);
+    }
+
+    [Fact]
+    public void GetTopicsNeedingConcepts_WithInsufficientConcepts_ReturnsTopicsList()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("Module 1", "Description", 10);
+        _roadmapService.AddTopicToModule("Module 1", "Topic 1", "Description", 75);
+        _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 1", "Description 1");
+        // Only 1 concept, needs 3-5
+
+        // Act
+        var result = _roadmapService.GetTopicsNeedingConcepts();
+
+        // Assert
+        Assert.Contains("Topics needing key concepts", result);
+        Assert.Contains("Module: 'Module 1' | Topic: 'Topic 1' | Current Concepts: 1", result);
+    }
+
+    [Fact]
+    public void GetTopicsNeedingConcepts_WithSufficientConcepts_ReturnsSuccess()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("Module 1", "Description", 10);
+        _roadmapService.AddTopicToModule("Module 1", "Topic 1", "Description", 75);
+        _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 1", "Description 1");
+        _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 2", "Description 2");
+        _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 3", "Description 3");
+
+        // Act
+        var result = _roadmapService.GetTopicsNeedingConcepts();
+
+        // Assert
+        Assert.Contains("✅ All topics have sufficient key concepts", result);
+    }
 }

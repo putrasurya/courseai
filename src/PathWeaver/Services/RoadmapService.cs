@@ -356,4 +356,82 @@ public class RoadmapService
 - Created: {_roadmap.CreatedDate:yyyy-MM-dd HH:mm}
 - Last Modified: {_roadmap.LastModifiedDate:yyyy-MM-dd HH:mm}";
     }
+
+    /// <summary>
+    /// Validates that all topics have key concepts and returns validation report
+    /// </summary>
+    /// <returns>Validation report with any missing key concepts</returns>
+    [Description("Validates roadmap quality by checking that all topics have key concepts")]
+    public string ValidateRoadmapQuality()
+    {
+        if (_roadmap == null)
+        {
+            return "No roadmap exists to validate.";
+        }
+
+        var issues = new List<string>();
+        var topicsWithoutConcepts = new List<string>();
+
+        foreach (var module in _roadmap.Modules)
+        {
+            foreach (var topic in module.Topics)
+            {
+                if (topic.Concepts == null || !topic.Concepts.Any())
+                {
+                    topicsWithoutConcepts.Add($"Module '{module.Title}' > Topic '{topic.Title}'");
+                }
+                else if (topic.Concepts.Count < 3)
+                {
+                    issues.Add($"Module '{module.Title}' > Topic '{topic.Title}' has only {topic.Concepts.Count} key concepts (should have 3-5)");
+                }
+            }
+        }
+
+        if (topicsWithoutConcepts.Any())
+        {
+            issues.Add("CRITICAL: Topics without any key concepts:");
+            issues.AddRange(topicsWithoutConcepts);
+        }
+
+        if (!issues.Any())
+        {
+            return "✅ Roadmap validation passed: All topics have appropriate key concepts.";
+        }
+
+        return $"❌ Roadmap validation issues found:\n{string.Join("\n", issues)}";
+    }
+
+    /// <summary>
+    /// Gets a list of topics that are missing key concepts
+    /// </summary>
+    /// <returns>List of topics needing key concepts</returns>
+    [Description("Gets topics that need key concepts added")]
+    public string GetTopicsNeedingConcepts()
+    {
+        if (_roadmap == null)
+        {
+            return "No roadmap exists.";
+        }
+
+        var topicsNeedingConcepts = new List<string>();
+
+        foreach (var module in _roadmap.Modules)
+        {
+            foreach (var topic in module.Topics)
+            {
+                if (topic.Concepts == null || topic.Concepts.Count < 3)
+                {
+                    var currentCount = topic.Concepts?.Count ?? 0;
+                    topicsNeedingConcepts.Add($"Module: '{module.Title}' | Topic: '{topic.Title}' | Current Concepts: {currentCount}");
+                }
+            }
+        }
+
+        if (!topicsNeedingConcepts.Any())
+        {
+            return "✅ All topics have sufficient key concepts.";
+        }
+
+        return $"Topics needing key concepts (should have 3-5 each):\n{string.Join("\n", topicsNeedingConcepts)}";
+    }
 }

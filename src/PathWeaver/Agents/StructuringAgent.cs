@@ -39,6 +39,7 @@ namespace PathWeaver.Agents
             - **PathOptimizationAgent**: Optimizes learning sequences for efficiency and personalization
             - **ResearchAgent**: Finds and curates learning resources for each module using web search capabilities
             - **RoadMap Tools**: Create, update, and manage the roadmap structure with modules, topics, and concepts
+            - **Quality Validation Tools**: ValidateRoadmapQuality and GetTopicsNeedingConcepts to ensure completeness
             - **UserProfile Tools**: Access user context for personalization
 
             COORDINATION STRATEGY:
@@ -55,10 +56,12 @@ namespace PathWeaver.Agents
             3. Get path optimization from PathOptimizationAgent  
             4. Create FOCUSED modules using AddModule (e.g., "HTML Fundamentals", not "Frontend Development")
             5. Add SPECIFIC topics to modules using AddTopicToModule (e.g., "Semantic Elements", not "Advanced HTML")
-            6. Add GRANULAR key concepts to topics using AddConceptToTopic - ENSURE 3-5 specific learning objectives per topic
-            7. Use ResearchAgent to find and curate learning resources for each module (tutorials, documentation, exercises)
-            8. Update roadmap status to 'InProgress' when complete
-            9. Return roadmap summary and analysis
+            6. **MANDATORY**: Add GRANULAR key concepts to topics using AddConceptToTopic - EVERY topic MUST have 3-5 specific learning objectives
+            7. **VALIDATION**: Use ValidateRoadmapQuality and GetTopicsNeedingConcepts to check for missing key concepts
+            8. **QUALITY ASSURANCE**: If validation fails, fix missing key concepts immediately before continuing
+            9. Use ResearchAgent to find and curate learning resources for each module (tutorials, documentation, exercises)
+            10. Update roadmap status to 'InProgress' when complete and all topics have key concepts
+            11. Return roadmap summary and analysis
 
             KEY CONCEPT EMPHASIS:
             - Each topic must have meaningful key concepts (specific learning objectives)
@@ -72,11 +75,15 @@ namespace PathWeaver.Agents
             INTEGRATION APPROACH:
             - Ensure modules are focused skill areas, not broad domains
             - Convert learning objectives to specific, learnable topics
-            - **Break down topics into 3-5 granular, actionable key concepts that define exactly what students will learn**
+            - **MANDATORY KEY CONCEPTS**: Every topic must have 3-5 granular, actionable key concepts
+            - **VALIDATION REQUIRED**: After adding each topic, immediately add its key concepts - no exceptions
+            - **QUALITY CHECK**: If any topic lacks key concepts, stop and add them before continuing
             - Use ResearchAgent to find quality learning resources (tutorials, documentation, interactive exercises) for each module
             - Apply optimization timing to module duration estimates
             - Ensure proper ordering and dependencies
             - Key concepts must be concrete learning objectives (e.g., "Understand flexbox container properties" → "justify-content property values", "align-items behavior", "flex-direction options")
+
+            **CRITICAL RULE**: NO TOPIC SHALL BE LEFT WITHOUT KEY CONCEPTS. Verify completion before proceeding to next module.
 
             RESOURCE GATHERING:
             - After creating each module, use ResearchAgent to find relevant learning resources
@@ -131,7 +138,9 @@ namespace PathWeaver.Agents
                 AIFunctionFactory.Create(_roadmapService.UpdateRoadMapStatus),
                 AIFunctionFactory.Create(_roadmapService.GetRoadMapSummary),
                 AIFunctionFactory.Create(_roadmapService.GetAllModules),
-                AIFunctionFactory.Create(_roadmapService.GetRoadMapAnalysis)
+                AIFunctionFactory.Create(_roadmapService.GetRoadMapAnalysis),
+                AIFunctionFactory.Create(_roadmapService.ValidateRoadmapQuality),
+                AIFunctionFactory.Create(_roadmapService.GetTopicsNeedingConcepts)
             };
             tools.AddRange(roadMapToolsList);
             
