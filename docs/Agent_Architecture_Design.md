@@ -1,4 +1,4 @@
-# PathWeaver Agent Architecture & Resource Assignment Strategy
+# CourseAI Agent Architecture & Resource Assignment Strategy
 
 ## Document Version
 - **Created**: 2025-11-20
@@ -6,7 +6,7 @@
 - **Status**: **IMPLEMENTED** - Specialized Agent Architecture
 
 ## Overview
-This document outlines the **enhanced specialized agent architecture** for PathWeaver, featuring 8 specialized agents that provide comprehensive learning roadmap generation capabilities.
+This document outlines the **enhanced specialized agent architecture** for CourseAI, featuring 8 specialized agents that provide comprehensive learning roadmap generation capabilities.
 
 ## Enhanced Specialized Agent Architecture
 

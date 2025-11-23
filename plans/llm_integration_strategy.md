@@ -1,8 +1,8 @@
-# LLM Integration Strategy for PathWeaver
+# LLM Integration Strategy for CourseAI
 
 ## Introduction
 
-The Large Language Model (LLM) is the core intelligence behind PathWeaver's agents. This document outlines the strategy for integrating LLMs using the **Microsoft Agent Framework**. This approach provides a structured, extensible, and robust way to build our multi-agent system.
+The Large Language Model (LLM) is the core intelligence behind CourseAI's agents. This document outlines the strategy for integrating LLMs using the **Microsoft Agent Framework**. This approach provides a structured, extensible, and robust way to build our multi-agent system.
 
 ## LLM Provider Configuration
 
@@ -62,4 +62,4 @@ To ensure responsible and safe operation:
 *   **Capability Versioning:** Prompt definitions and code-driven capability implementations will be versioned in our Git repository, providing a clear history of changes.
 *   **A/B Testing:** The framework's configuration flexibility should allow for programmatic selection of different LLM services, prompt versions, or capability implementations, facilitating A/B testing to optimize for cost and quality.
 
-This LLM integration strategy provides a robust, maintainable, and scalable foundation for building the AI capabilities of PathWeaver using the Microsoft Agent Framework.
+This LLM integration strategy provides a robust, maintainable, and scalable foundation for building the AI capabilities of CourseAI using the Microsoft Agent Framework.

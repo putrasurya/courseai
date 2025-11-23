@@ -1,6 +1,6 @@
 # Web Search Integration
 
-The PathWeaver application now includes web search capabilities to enhance the quality and relevance of generated learning roadmaps.
+The CourseAI application now includes web search capabilities to enhance the quality and relevance of generated learning roadmaps.
 
 ## Configuration
 

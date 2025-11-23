@@ -1,12 +1,12 @@
-# Data Persistence Strategy for PathWeaver
+# Data Persistence Strategy for CourseAI
 
 ## Introduction
 
-This document outlines the strategy for data persistence in PathWeaver, detailing how user profiles, generated learning roadmaps, learning resources, and other critical application data will be stored, managed, and accessed. A robust data persistence layer is essential for maintaining user state, progress, and ensuring the long-term functionality of the multi-agent system.
+This document outlines the strategy for data persistence in CourseAI, detailing how user profiles, generated learning roadmaps, learning resources, and other critical application data will be stored, managed, and accessed. A robust data persistence layer is essential for maintaining user state, progress, and ensuring the long-term functionality of the multi-agent system.
 
 ## Database Choice
 
-Given the structured nature of the `Roadmap`, `UserProfile`, `Modules`, `Topics`, and `LearningResources` entities, and the relationships between them, a **relational database** is a strong candidate for PathWeaver.
+Given the structured nature of the `Roadmap`, `UserProfile`, `Modules`, `Topics`, and `LearningResources` entities, and the relationships between them, a **relational database** is a strong candidate for CourseAI.
 
 *   **Primary Choice: PostgreSQL with Entity Framework Core (EF Core)**
     *   **Justification:**
@@ -110,4 +110,4 @@ The core data models will closely mirror the conceptual structures defined in `a
 *   **Least Privilege:** Database users will be configured with the minimum necessary permissions.
 *   **Input Validation:** All data received from the UI or external sources will be thoroughly validated before being stored to prevent injection attacks and ensure data integrity.
 
-This data persistence strategy provides a solid foundation for PathWeaver, ensuring that all valuable information is stored securely, efficiently, and in a way that supports the dynamic nature of the multi-agent system.
+This data persistence strategy provides a solid foundation for CourseAI, ensuring that all valuable information is stored securely, efficiently, and in a way that supports the dynamic nature of the multi-agent system.

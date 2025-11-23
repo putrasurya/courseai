@@ -141,7 +141,7 @@ builder.Services.AddSingleton<IExperienceDesignAgent, ExperienceDesignAgent>();
 
 ---
 
-## **🚀 PathWeaver Now Has Enterprise-Level Learning Roadmap Generation**
+## **🚀 CourseAI Now Has Enterprise-Level Learning Roadmap Generation**
 
 **From simple 2-agent flow to sophisticated 8-agent specialized system:**
 - **Quality**: Professional-grade resource evaluation and learning design

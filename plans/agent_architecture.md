@@ -1,6 +1,6 @@
 ## Introduction
 
-This document outlines the current Multi-Agent System (MAS) architecture within PathWeaver, focusing on how agents interact, communicate, and share information to collaboratively generate personalized learning roadmaps. **This architecture is built upon the Microsoft Agent Framework and has evolved through iterative development.**
+This document outlines the current Multi-Agent System (MAS) architecture within CourseAI, focusing on how agents interact, communicate, and share information to collaboratively generate personalized learning roadmaps. **This architecture is built upon the Microsoft Agent Framework and has evolved through iterative development.**
 
 ## Current Agent Architecture (Updated November 2024)
 

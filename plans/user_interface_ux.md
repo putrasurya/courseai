@@ -1,8 +1,8 @@
-# User Interface and User Experience (UI/UX) for PathWeaver
+# User Interface and User Experience (UI/UX) for CourseAI
 
 ## Overall Design Philosophy
 
-The PathWeaver UI/UX will prioritize clarity, interactivity, and a guided experience. The system should feel like a collaborative assistant rather than a rigid tool.
+The CourseAI UI/UX will prioritize clarity, interactivity, and a guided experience. The system should feel like a collaborative assistant rather than a rigid tool.
 
 *   **Intuitive & Guided:** Users should easily understand what to do at each step, with clear prompts and feedback from the agents.
 *   **Interactive & Responsive:** The UI should react dynamically to user input and agent activity, providing immediate feedback.
@@ -75,4 +75,4 @@ The PathWeaver UI/UX will prioritize clarity, interactivity, and a guided experi
 *   **Interactive Forms:** Blazor's form handling will be key for goal setting and feedback mechanisms.
 *   **JavaScript Interop:** For integrating any necessary JavaScript libraries (e.g., for advanced drag-and-drop or rich text editing, if required).
 
-This UI/UX outline provides a blueprint for designing the frontend of PathWeaver, ensuring a user-centric approach throughout the development process.
+This UI/UX outline provides a blueprint for designing the frontend of CourseAI, ensuring a user-centric approach throughout the development process.

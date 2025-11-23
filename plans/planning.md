@@ -1,18 +1,18 @@
-# PathWeaver: A Multi-Agent System for Personalized Learning Roadmaps
+# CourseAI: A Multi-Agent System for Personalized Learning Roadmaps
 
 ## Vision
 
-To create an AI-powered system that assists users in generating, refining, and navigating personalized learning roadmaps on any topic. PathWeaver will leverage a multi-agent approach to deliver comprehensive and tailored learning paths that adapt to the user's unique goals, prior knowledge, and learning style.
+To create an AI-powered system that assists users in generating, refining, and navigating personalized learning roadmaps on any topic. CourseAI will leverage a multi-agent approach to deliver comprehensive and tailored learning paths that adapt to the user's unique goals, prior knowledge, and learning style.
 
 ## Core Concepts
 
 *   **Multi-Agent System (MAS):** The system will be composed of several specialized AI agents, each responsible for a specific task in the roadmap creation process. This modular approach allows for greater flexibility, scalability, and expertise in each step.
-*   **Personalized Learning Roadmaps:** Unlike generic learning paths, PathWeaver will generate roadmaps that are tailored to the individual user. This includes considering their existing skills, learning preferences (e.g., theoretical vs. project-based), and the specific goals they want to achieve.
+*   **Personalized Learning Roadmaps:** Unlike generic learning paths, CourseAI will generate roadmaps that are tailored to the individual user. This includes considering their existing skills, learning preferences (e.g., theoretical vs. project-based), and the specific goals they want to achieve.
 *   **Interactive and Iterative:** The process of creating a learning roadmap is a conversation. Users can interact with the system to provide feedback, ask for modifications, and refine the generated path until it meets their needs.
 
 ## Agent Roles
 
-The PathWeaver system will be comprised of the following specialized agents:
+The CourseAI system will be comprised of the following specialized agents:
 
 1.  **Planner Agent:**
     *   **Responsibilities:** User interaction, goal clarification, and initial planning.
@@ -48,7 +48,7 @@ The PathWeaver system will be comprised of the following specialized agents:
 
 5.  **Phase 5: Learning and Tracking (Future):**
     *   Once the roadmap is finalized, the user can begin their learning journey.
-    *   Future versions of PathWeaver could include features to track progress, provide reminders, and suggest supplementary materials.
+    *   Future versions of CourseAI could include features to track progress, provide reminders, and suggest supplementary materials.
 
 ## Technical Stack
 

@@ -1,8 +1,8 @@
-# UserProfile Context Management in PathWeaver
+# UserProfile Context Management in CourseAI
 
 ## Overview
 
-The PathWeaver system now uses a **hybrid approach** for managing UserProfile context:
+The CourseAI system now uses a **hybrid approach** for managing UserProfile context:
 
 1. **Agent Tools** - The PlannerAgent has specialized tools to build and maintain the UserProfile
 2. **Context Passing** - The profile data is passed as context between agent interactions

@@ -1,8 +1,8 @@
-# Testing Strategy for PathWeaver
+# Testing Strategy for CourseAI
 
 ## Introduction
 
-This document outlines the comprehensive testing strategy for the PathWeaver multi-agent system, built upon the **Microsoft Agent Framework**. Given the complexity introduced by multiple interacting agents and Large Language Model (LLM) integration, a layered approach to testing is essential to ensure the system's correctness, reliability, performance, and security.
+This document outlines the comprehensive testing strategy for the CourseAI multi-agent system, built upon the **Microsoft Agent Framework**. Given the complexity introduced by multiple interacting agents and Large Language Model (LLM) integration, a layered approach to testing is essential to ensure the system's correctness, reliability, performance, and security.
 
 ## Testing Levels
 
@@ -99,4 +99,4 @@ This document outlines the comprehensive testing strategy for the PathWeaver mul
     *   Automated static application security testing (SAST) and dynamic application security testing (DAST) tools.
     *   Penetration testing (manual and automated).
 
-By adopting this comprehensive testing strategy, PathWeaver aims to deliver a high-quality, reliable, and secure personalized learning roadmap solution.
+By adopting this comprehensive testing strategy, CourseAI aims to deliver a high-quality, reliable, and secure personalized learning roadmap solution.

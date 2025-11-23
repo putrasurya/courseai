@@ -1,0 +1,12 @@
+namespace CourseAI.Models;
+
+public class RoadmapTopic
+{
+    public string? Title { get; set; }
+    public string? Description { get; set; }
+    public int Order { get; set; }
+    public List<RoadmapConcept> Concepts { get; set; } = new();
+    public int ConfidenceScore { get; set; } = 0;
+    
+    // Note: Resources are now managed at Module level, not Topic level
+}
