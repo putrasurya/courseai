@@ -1,114 +1,148 @@
 ## Introduction
 
-This document outlines the high-level architecture for the Multi-Agent System (MAS) within PathWeaver, focusing on how different agents interact, communicate, and share information to collaboratively generate personalized learning roadmaps. **This architecture is built upon the Microsoft Agent Framework.**
+This document outlines the current Multi-Agent System (MAS) architecture within PathWeaver, focusing on how agents interact, communicate, and share information to collaboratively generate personalized learning roadmaps. **This architecture is built upon the Microsoft Agent Framework and has evolved through iterative development.**
 
-## Agent Interaction Model
+## Current Agent Architecture (Updated November 2024)
 
-The agent interaction model is based on the core components and patterns provided by the Microsoft Agent Framework.
+### Core Principles
+*   **Single Orchestrator:** All user interactions flow through the OrchestratorAgent
+*   **Tool-Based Agents:** Specialized agents serve as tools for higher-level agents
+*   **Service-Based State:** Shared data managed through centralized services
+*   **Quality Enforcement:** Built-in validation ensures complete roadmaps
+*   **Real-Time Feedback:** User receives live status updates during processing
 
-*   **Agents:** Our specialized agents (Planner, Research, Structuring, Refinement) will be implemented as instances of the framework's agent abstraction. Each agent is configured with a specific set of instructions and has access to the framework's core services.
-*   **Agent Capabilities (Tools/Functions):** The functionalities of our agents are exposed as capabilities (sometimes referred to as tools or functions) that an agent can invoke. These capabilities can be implemented as native code functions or through prompts to an underlying LLM. For example, the Research Agent would have capabilities for web searching or summarizing content.
-*   **Orchestration:** Agent collaboration is achieved through an orchestrator pattern. A primary "Orchestrator Agent" can manage and invoke other specialized agents, passing context and instructions between them. This allows for a structured and auditable flow of control, where the orchestrator directs the workflow (e.g., orchestrator instructs Planner Agent, then instructs Research Agent based on Planner's output). The framework's context management and interaction history facilitate this communication.
-*   **Shared Context:** Context is managed through the arguments passed between agent invocations and potentially a shared session state maintained by the framework. Each agent invocation receives the necessary information (like the user profile or a list of resources) and returns its output, which the orchestrator then processes or passes to the next agent in the chain.
+### Agent Hierarchy
+
+```
+OrchestratorAgent (Main Entry Point)
+├── PlannerAgent (Tool) - Profile gathering and conversation management
+├── StructuringAgent (Tool) - Roadmap creation and coordination
+│   ├── CurriculumAgent (Tool) - Educational structure consultation
+│   ├── PathOptimizationAgent (Tool) - Learning path optimization
+│   └── ResourceGatheringAgent (Tool) - Learning resource discovery
+└── Shared Services
+    ├── UserProfileService - Manages user profile state and tools
+    ├── RoadmapService - Manages roadmap state and tools
+    └── StatusService - Provides real-time activity notifications
+```
 
 ## Agent Orchestration
 
-A central orchestrator component, likely implemented as a dedicated agent within the Microsoft Agent Framework, will manage the overall workflow.
+### OrchestratorAgent (Primary Controller)
+*   **Role:** Single entry point for all user interactions, conversation flow management
+*   **Capabilities:** 
+    - User conversation management
+    - Profile completion detection
+    - Automatic roadmap generation triggering
+    - Progress communication to UI
+*   **Key Features:**
+    - Detects when profile is complete enough for roadmap generation
+    - Sends "ROADMAP_COMPLETE" signal to trigger UI navigation
+    - Provides roadmap summary before completion
+    - Uses PlannerAgent and StructuringAgent as tools
 
-*   **Orchestrator Agent:** A top-level agent will manage the overall process of roadmap creation.
-*   **Workflow Management:** The orchestrator will invoke the specialized agents in sequence, for example:
-    1.  Interact with the **Planner Agent** to get the `UserProfile`.
-    2.  Use the `UserProfile` to invoke the **Research Agent**.
-    3.  Pass the research results to the **Structuring Agent**.
-    4.  Present the draft to the user and invoke the **Refinement Agent** with user feedback.
-*   **State Management:** The orchestrator is responsible for maintaining the high-level state of the roadmap generation process, gathering the outputs from each agent to build the final `Roadmap` object. The framework's interaction history provides a built-in ledger of all agent activities.
+### PlannerAgent (Profile Management)
+*   **Role:** User profile gathering through conversational AI
+*   **Capabilities:** 
+    - Asks clarifying questions about learning goals
+    - Extracts and structures user information
+    - Uses UserProfileService tools for data management
+*   **Integration:** Serves as a tool for OrchestratorAgent
 
-## Data Flow and Shared Data Structures
+### StructuringAgent (Roadmap Coordination)
+*   **Role:** Coordinates roadmap creation using consultant agents
+*   **Capabilities:**
+    - Uses CurriculumAgent for educational structure advice
+    - Uses PathOptimizationAgent for learning path feedback
+    - Uses ResourceGatheringAgent for learning materials
+    - Constructs roadmap using RoadmapService tools
+    - Enforces quality validation (modules have topics, topics have key concepts)
+*   **Quality Checks:** 
+    - Ensures all modules have topics
+    - Ensures all topics have key concepts
+    - Ensures all modules have learning resources
 
-The core shared data structure will be the `Roadmap` object, which will evolve throughout the agent interaction process. This object will be assembled by the Orchestrator Agent based on the outputs of the specialized agents.
+### Consultant Agents (Natural Language Advisors)
 
-### `Roadmap` Data Structure (Conceptual)
+#### CurriculumAgent
+*   **Role:** Educational structure consultation and validation
+*   **Capabilities:**
+    - Provides natural language feedback on curriculum design
+    - Suggests improvements for learning progression
+    - Uses web search to validate current industry practices
+    - Ensures educational best practices are followed
+*   **Output:** Natural language recommendations (not JSON)
 
-```csharp
-public class Roadmap
-{
-    public Guid Id { get; set; }
-    public UserProfile UserProfile { get; set; } // User's goals, existing knowledge, preferences
-    public List<RoadmapModule> Modules { get; set; } = new List<RoadmapModule>();
-    public List<LearningResource> SuggestedResources { get; set; } = new List<LearningResource>();
-    public DateTime CreatedDate { get; set; }
-    public DateTime LastModifiedDate { get; set; }
-    public RoadmapStatus Status { get; set; } // e.g., Draft, AwaitingFeedback, Approved, Active
-    // Other properties for overall roadmap context
-}
+#### PathOptimizationAgent
+*   **Role:** Learning path optimization consultation
+*   **Capabilities:**
+    - Analyzes learning sequences for logical flow
+    - Suggests reordering or restructuring recommendations
+    - Provides feedback on difficulty progression
+*   **Output:** Natural language optimization advice
 
-public class UserProfile
-{
-    public string LearningGoal { get; set; }
-    public List<string> KnownSkills { get; set; }
-    public List<string> PreferredLearningStyles { get set; } // e.g., "visual", "hands-on", "reading"
-    public string ExperienceLevel { get; set; } // e.g., "beginner", "intermediate", "expert"
-    // Other user-specific data
-}
+#### ResourceGatheringAgent  
+*   **Role:** Learning resource discovery and curation
+*   **Capabilities:**
+    - Searches web for relevant learning materials
+    - Finds courses, tutorials, documentation, and practice resources
+    - Evaluates resource quality and relevance
+    - Uses Tavily web search API for current resources
+*   **Output:** Curated list of learning resources per module
 
-public class RoadmapModule
-{
-    public string Title { get; set; }
-    public string Description { get; set; }
-    public int Order { get; set; }
-    public List<RoadmapTopic> Topics { get; set; } = new List<RoadmapTopic>();
-    // Estimated time, prerequisites, etc.
-}
+## Data Flow and Shared Services
 
-public class RoadmapTopic
-{
-    public string Title { get; set; }
-    public string Description { get; set; }
-    public int Order { get; set; }
-    public List<LearningResource> Resources { get; set; } = new List<LearningResource>();
-    // Learning objectives, keywords, etc.
-}
+### Centralized State Management
+The system uses service-based architecture for shared state management, following DRY principles:
 
-public class LearningResource
-{
-    public string Title { get; set; }
-    public string Url { get; set; }
-    public string Type { get; set; } // e.g., "article", "video", "course", "book", "project"
-    public string Source { get; set; } // e.g., "YouTube", "Coursera", "Medium"
-    public string Description { get; set; }
-    public int EstimatedTimeMinutes { get; set; }
-    public double RelevanceScore { get; set; } // How relevant is this to the topic/user profile
-}
-```
+#### UserProfileService
+*   **Purpose:** Centralized UserProfile management
+*   **Tools Provided:** 
+    - Update learning goals, skills, preferences
+    - Check profile completeness
+    - Get profile summary
+*   **Usage:** Different agents get only the tools they need (selective tool assignment)
 
-## High-Level Agent Responsibilities and Interactions
+#### RoadmapService  
+*   **Purpose:** Centralized Roadmap construction and management
+*   **Tools Provided:**
+    - Create/update modules and topics
+    - Add key concepts and resources
+    - Get roadmap analysis and summary
+    - Quality validation checks
+*   **Usage:** StructuringAgent uses these tools to build roadmap incrementally
 
-### 1. Planner Agent
+#### StatusService
+*   **Purpose:** Real-time user notification system
+*   **Features:** 
+    - Agents send status updates during processing
+    - UI automatically displays current activity
+    - Provides transparency for long-running operations
 
-*   **Role:** User Interface, Goal Elicitation, Initial Context Setup. Implemented as an agent within the Microsoft Agent Framework.
-*   **Capabilities:** Utilizes functions within its domain to ask clarifying questions and summarize the user's profile.
-*   **Process:** Engages in a direct interaction with the user, orchestrated by the main application or a top-level agent.
-*   **Output:** A structured `UserProfile` object.
+## Key Architectural Improvements
 
-### 2. Research Agent
+### Quality Enforcement
+*   **Module Validation:** Every module must have topics
+*   **Topic Validation:** Every topic must have key concepts  
+*   **Resource Validation:** Every module must have learning resources
+*   **Automatic Retry:** Agents retry if quality checks fail
 
-*   **Role:** Information Retrieval, Resource Curation. Implemented as an agent within the Microsoft Agent Framework.
-*   **Capabilities:** Equipped with functions for web searches, summarizing content from external sources, and evaluating resource quality.
-*   **Input:** `UserProfile` and specific topics to research.
-*   **Output:** A list of `LearningResource` objects.
+### User Experience Enhancements
+*   **Live Status Updates:** Users see what agents are doing in real-time
+*   **Automatic Navigation:** System automatically moves to roadmap page when complete
+*   **Conversational Flow:** Natural back-and-forth until profile is complete
+*   **Interactive Chat:** Markdown rendering, auto-scroll, auto-focus
 
-### 3. Structuring Agent
+### Technical Integration
+*   **Microsoft Agent Framework:** All agents built on MAF foundation
+*   **OpenTelemetry:** Full observability and tracing
+*   **Tavily Search:** Web search capability for current information
+*   **Blazor UI:** Responsive chat interface with component separation
 
-*   **Role:** Roadmap Generation, Content Organization. Implemented as an agent within the Microsoft Agent Framework.
-*   **Capabilities:** Uses sophisticated functions to analyze resources, identify themes, and organize them into a logical sequence of `RoadmapModule` and `RoadmapTopic` objects.
-*   **Input:** `UserProfile` and a list of `LearningResource`s.
-*   **Output:** A structured list of `RoadmapModule`s.
+### Eliminated Complexity
+*   **No Research Agent:** Replaced with simpler ResourceGatheringAgent
+*   **No Sub-Agents:** Removed unnecessary agent hierarchy 
+*   **No JSON Responses:** Consultant agents use natural language
+*   **No Manual Triggers:** Automatic roadmap generation based on profile completeness
 
-### 4. Refinement Agent
-
-*   **Role:** User Feedback Integration, Iteration Management. Implemented as an agent within the Microsoft Agent Framework.
-*   **Capabilities:** Has functions to interpret natural language feedback from the user and translate it into actionable directives (e.g., "regenerate_module", "find_more_resources", "change_topic_order").
-*   **Input:** A drafted `Roadmap` structure and user feedback.
-*   **Output:** A set of instructions for the Orchestrator Agent to re-invoke other agents with new parameters.
-
-This architectural overview provides a foundation for the next steps in designing and implementing the PathWeaver system.
+This architecture provides a clean, maintainable, and user-friendly system for generating personalized learning roadmaps through AI agent collaboration.
