@@ -12,19 +12,27 @@ namespace PathWeaver.Agents
         public AIAgent Agent { get; }
         
         private readonly WebSearchService _searchService;
+        private readonly RoadmapService _roadmapService;
         private readonly IAgentStatusService _statusService;
 
         public ResourceGatheringAgent(
             InstrumentChatClient instrumentChatClient,
             WebSearchService searchService,
+            RoadmapService roadmapService,
             IAgentStatusService statusService)
         {
             _searchService = searchService;
+            _roadmapService = roadmapService;
             _statusService = statusService;
             
             var tools = new List<AIFunction>
             {
-                AIFunctionFactory.Create(_searchService.SearchWeb)
+                AIFunctionFactory.Create(_searchService.SearchWeb),
+                AIFunctionFactory.Create(_roadmapService.AddResourceToModule),
+                AIFunctionFactory.Create(_roadmapService.GetModuleResources),
+                AIFunctionFactory.Create(_roadmapService.ValidateModuleResourceQuality),
+                AIFunctionFactory.Create(_roadmapService.ValidateAllResourceUrls),
+                AIFunctionFactory.Create(_roadmapService.GetModulesWithoutResources)
             };
             
             Agent = new ChatClientAgent(
@@ -38,48 +46,56 @@ namespace PathWeaver.Agents
         protected string GetSystemPrompt()
         {
             return """
-            You are a ResourceGatheringAgent, an expert at finding high-quality learning resources for educational modules.
+            You are a ResourceGatheringAgent, an expert at finding high-quality learning resources with REAL URLs and adding them directly to the roadmap.
 
-            ## Your Role
-            Your job is to gather comprehensive learning resources for each module in a learning roadmap. You should find a variety of resource types to accommodate different learning styles.
+            ## MANDATORY WORKFLOW (Follow this EXACT sequence):
+            
+            **STEP 1: Search Web for Real Resources**
+            - Use SearchWeb to find ACTUAL, SPECIFIC learning resources with working URLs
+            - Search for "[module topic] course", "[module topic] tutorial", etc.
+            - YOU MUST find real URLs, not generic descriptions!
+            
+            **STEP 2: Add Each Resource Immediately**
+            - For EVERY resource you find, use AddResourceToModule with the ACTUAL URL
+            - Resource types: Video, Documentation, Article, Tutorial, Book, Game
+            - Include proper source (YouTube, Coursera, MDN, etc.)
+            
+            **STEP 3: Validate Quality (MANDATORY)**
+            - Use ValidateModuleResourceQuality to check all resources have URLs
+            - If validation fails, you MUST search for more resources with proper URLs
+            - Continue until validation passes completely
+            
+            **STEP 4: Ensure Completeness**
+            - Aim for 5-8 diverse, high-quality resources per module
+            - Use ValidateAllResourceUrls for final verification
 
-            ## Resource Types to Find
-            For each module, gather these types of resources:
-            1. **Online Courses** - Structured video courses from platforms like Coursera, Udemy, YouTube playlists
-            2. **Documentation** - Official documentation, tutorials, guides
-            3. **Articles & Blogs** - High-quality articles that explain concepts clearly
-            4. **Interactive Resources** - Coding playgrounds, simulators, interactive tutorials
-            5. **Books** - Recommended books or free ebooks
-            6. **Practice Resources** - Coding challenges, exercises, project ideas
+            ## CRITICAL REQUIREMENTS (NON-NEGOTIABLE):
+            1. **EVERY resource MUST have a real URL** from web search
+            2. **NO generic descriptions** or placeholder content allowed
+            3. **You CANNOT finish** until ValidateModuleResourceQuality passes
+            4. **Use web search extensively** - don't rely on memory
+            5. **Add resources one by one** using AddResourceToModule
+            6. **Prefer free resources**, mark paid ones as "(Paid)"
 
-            ## Quality Criteria
-            Only recommend resources that are:
-            - **Current** and up-to-date (prefer recent content)
-            - **High-quality** with good ratings/reviews
-            - **Comprehensive** covering the module topics thoroughly
-            - **Accessible** (prefer free resources, clearly mark paid ones)
-            - **From reputable sources** (established platforms, recognized authors)
+            ## Example Good Resource:
+            - Title: "JavaScript Fundamentals Course"
+            - URL: "https://www.coursera.org/learn/javascript-basics"
+            - Type: Video
+            - Source: "Coursera"
+            - Description: "Comprehensive JavaScript course covering variables, functions, and DOM manipulation"
 
-            ## Search Strategy
-            Use web search extensively to:
-            1. Search for "[module topic] tutorial" or "[module topic] course"
-            2. Look for "best [module topic] resources" or "learn [module topic]"
-            3. Find official documentation for technologies
-            4. Search for recent articles and guides
-            5. Look for interactive learning platforms
+            ## FAILURE CONDITIONS (These mean you failed):
+            - Any resource without a real URL
+            - Generic descriptions like "Learn JavaScript basics"
+            - Not using web search to find actual resources
+            - Not validating resource quality before finishing
+            - Providing fewer than 5 resources per module
 
-            ## Response Format
-            Provide your findings in natural language, describing:
-            - What types of resources you found
-            - Why these resources are valuable
-            - Any notable features or recommendations
-            - Quality assessment of the resources
-
-            Be thorough and aim to provide 5-8 diverse resources per module to give learners multiple options.
+            Your success is measured by ValidateModuleResourceQuality returning ✅ for every module!
             """;
         }
 
-        [Description("Gather comprehensive learning resources for a specific module")]
+        [Description("Gather comprehensive learning resources for a specific module and add them directly to the roadmap")]
         public async Task<string> GatherResourcesForModuleAsync(string moduleName, string moduleDescription, string[] topics)
         {
             _statusService.SetStatus("ResourceGatheringAgent", $"🔍 Gathering resources for {moduleName}...");
@@ -88,14 +104,35 @@ namespace PathWeaver.Agents
             {
                 var topicsText = string.Join(", ", topics);
                 var prompt = $"""
-                Find comprehensive learning resources for this module:
+                CRITICAL TASK: Find REAL learning resources with working URLs for this module:
                 
                 **Module**: {moduleName}
-                **Description**: {moduleDescription}
-                **Topics Covered**: {topicsText}
+                **Description**: {moduleDescription}  
+                **Topics**: {topicsText}
                 
-                Please search for and recommend high-quality learning resources that cover these topics thoroughly. 
-                Include a variety of resource types (courses, documentation, articles, interactive tools, etc.).
+                MANDATORY STEPS (Do NOT skip any):
+                
+                1. **SEARCH THE WEB** (Required):
+                   - Use SearchWeb multiple times to find ACTUAL resources
+                   - Search for "{moduleName} course", "{moduleName} tutorial", "{moduleName} documentation"
+                   - Search for specific topics: {topicsText}
+                   - Find resources from real platforms (YouTube, Coursera, MDN, etc.)
+                
+                2. **ADD EACH RESOURCE** (Required):
+                   - Use AddResourceToModule for EVERY resource you find
+                   - Include the ACTUAL URL from your search results
+                   - Add 5-8 diverse resources (videos, docs, articles, tutorials)
+                
+                3. **VALIDATE QUALITY** (Required):
+                   - Use ValidateModuleResourceQuality to check all resources have URLs
+                   - If validation fails, search for MORE resources with proper URLs
+                   - Keep going until validation returns ✅
+                
+                4. **FINAL CHECK** (Required):
+                   - Use ValidateAllResourceUrls to ensure all URLs work
+                
+                YOU CANNOT FINISH until ValidateModuleResourceQuality shows ✅ for this module!
+                START by searching the web for real resources now.
                 """;
 
                 var response = await Agent.RunAsync(prompt, Thread);

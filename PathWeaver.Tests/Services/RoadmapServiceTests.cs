@@ -246,6 +246,76 @@ public class RoadmapServiceTests
     }
 
     [Fact]
+    public void AddResourcesToModule_ShouldParseStructuredResources_WhenValidFormatProvided()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("HTML Basics", "Learn HTML fundamentals", 20);
+
+        var structuredResources = """
+            **RESOURCE 1:**
+            - Title: HTML Tutorial - W3Schools
+            - URL: https://www.w3schools.com/html/
+            - Type: Documentation
+            - Source: W3Schools
+            - Description: Comprehensive HTML tutorial covering all basics
+
+            **RESOURCE 2:**
+            - Title: HTML Crash Course - YouTube
+            - URL: https://www.youtube.com/watch?v=UB1O30fR-EE
+            - Type: Video
+            - Source: Traversy Media
+            - Description: Free video course on HTML fundamentals
+            """;
+
+        // Act
+        var result = _roadmapService.AddResourcesToModule("HTML Basics", structuredResources);
+
+        // Assert
+        Assert.Equal("Added 2 resources to module 'HTML Basics' successfully.", result);
+        var roadmap = _roadmapService.GetRoadMap();
+        var module = roadmap?.Modules.FirstOrDefault(m => m.Title == "HTML Basics");
+        
+        Assert.NotNull(module);
+        Assert.Equal(2, module.Resources.Count);
+        
+        var firstResource = module.Resources[0];
+        Assert.Equal("HTML Tutorial - W3Schools", firstResource.Title);
+        Assert.Equal("https://www.w3schools.com/html/", firstResource.Url);
+        Assert.Equal(ResourceType.Documentation, firstResource.Type);
+        Assert.Equal("W3Schools", firstResource.Source);
+
+        var secondResource = module.Resources[1];
+        Assert.Equal("HTML Crash Course - YouTube", secondResource.Title);
+        Assert.Equal("https://www.youtube.com/watch?v=UB1O30fR-EE", secondResource.Url);
+        Assert.Equal(ResourceType.Video, secondResource.Type);
+        Assert.Equal("Traversy Media", secondResource.Source);
+    }
+
+    [Fact]
+    public void AddResourcesToModule_ShouldFallbackToGenericResource_WhenParsingFails()
+    {
+        // Arrange
+        _roadmapService.InitializeRoadMap("Test summary");
+        _roadmapService.AddModule("Test Module", "Test Description", 20);
+
+        var unstructuredDescription = "Some general description about resources without proper formatting";
+
+        // Act
+        var result = _roadmapService.AddResourcesToModule("Test Module", unstructuredDescription);
+
+        // Assert
+        Assert.Equal("Added general resource description to module 'Test Module' successfully.", result);
+        var roadmap = _roadmapService.GetRoadMap();
+        var module = roadmap?.Modules.FirstOrDefault(m => m.Title == "Test Module");
+        
+        Assert.NotNull(module);
+        Assert.Single(module.Resources);
+        Assert.Equal("Resources for Test Module", module.Resources[0].Title);
+        Assert.Equal(unstructuredDescription, module.Resources[0].Description);
+    }
+
+    [Fact]
     public void GetRoadMapAnalysis_ShouldReturnAnalysis_WhenRoadmapHasData()
     {
         // Arrange
@@ -337,6 +407,9 @@ public class RoadmapServiceTests
         _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 1", "Description 1");
         _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 2", "Description 2");
         _roadmapService.AddConceptToTopic("Module 1", "Topic 1", "Concept 3", "Description 3");
+        
+        // Add resources to satisfy validation requirements
+        _roadmapService.AddResourceToModule("Module 1", "Test Resource", "https://example.com", ResourceType.Documentation, "Test Source", "Test Description");
 
         // Act
         var result = _roadmapService.ValidateRoadmapQuality();
@@ -444,13 +517,16 @@ public class RoadmapServiceTests
         _roadmapService.AddConceptToTopic("HTML Basics", "HTML Tags", "div element", "Block-level container");
         _roadmapService.AddConceptToTopic("HTML Basics", "HTML Tags", "span element", "Inline container");
         _roadmapService.AddConceptToTopic("HTML Basics", "HTML Tags", "p element", "Paragraph element");
+        
+        // Add resources to satisfy validation requirements
+        _roadmapService.AddResourceToModule("HTML Basics", "HTML Guide", "https://example.com/html", ResourceType.Documentation, "MDN", "Comprehensive HTML guide");
 
         // Act
         var result = _roadmapService.ValidateRoadmapQuality();
 
         // Assert
         Assert.Contains("✅ Roadmap validation passed", result);
-        Assert.Contains("All modules have topics and all topics have appropriate key concepts", result);
+        Assert.Contains("All modules have topics, all topics have appropriate key concepts, and all modules have resources", result);
     }
 
     [Fact]

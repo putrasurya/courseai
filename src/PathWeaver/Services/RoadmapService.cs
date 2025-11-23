@@ -325,6 +325,109 @@ public class RoadmapService
         return $"Resource '{resourceTitle}' removed from module '{moduleTitle}'";
     }
 
+    // Resource Quality Tools
+    [Description("Validate that all resources in a module have proper URLs and titles")]
+    public string ValidateModuleResourceQuality(string moduleTitle)
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var module = _roadmap.Modules.FirstOrDefault(m => m.Title == moduleTitle);
+        if (module == null)
+            return $"Module '{moduleTitle}' not found";
+
+        if (!module.Resources.Any())
+            return $"Module '{moduleTitle}' has no resources to validate";
+
+        var issues = new List<string>();
+        
+        foreach (var resource in module.Resources)
+        {
+            // Check for missing or invalid URL
+            if (string.IsNullOrWhiteSpace(resource.Url))
+            {
+                issues.Add($"Resource '{resource.Title}' is missing URL");
+            }
+            else if (!Uri.TryCreate(resource.Url, UriKind.Absolute, out _))
+            {
+                issues.Add($"Resource '{resource.Title}' has invalid URL: {resource.Url}");
+            }
+            
+            // Check for missing title
+            if (string.IsNullOrWhiteSpace(resource.Title))
+            {
+                issues.Add($"Resource with URL '{resource.Url}' is missing title");
+            }
+            
+            // Check for generic/placeholder content
+            if (resource.Title?.Contains("placeholder", StringComparison.OrdinalIgnoreCase) == true ||
+                resource.Description?.Contains("placeholder", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                issues.Add($"Resource '{resource.Title}' appears to be a placeholder");
+            }
+        }
+
+        if (!issues.Any())
+            return $"✅ All {module.Resources.Count} resources in module '{moduleTitle}' have proper URLs and titles";
+
+        return $"❌ Resource quality issues in module '{moduleTitle}':\n{string.Join("\n", issues)}";
+    }
+
+    [Description("Get all modules that are missing resources")]
+    public string GetModulesWithoutResources()
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var modulesWithoutResources = _roadmap.Modules
+            .Where(m => !m.Resources.Any())
+            .Select(m => m.Title)
+            .ToList();
+
+        if (!modulesWithoutResources.Any())
+            return "✅ All modules have resources";
+
+        return $"❌ Modules missing resources: {string.Join(", ", modulesWithoutResources)}";
+    }
+
+    [Description("Validate that all module resources have actual working URLs")]
+    public string ValidateAllResourceUrls()
+    {
+        if (_roadmap == null)
+            return "No roadmap available";
+
+        var invalidUrls = new List<string>();
+        var moduleResourceCount = new Dictionary<string, int>();
+
+        foreach (var module in _roadmap.Modules)
+        {
+            moduleResourceCount[module.Title] = module.Resources.Count;
+            
+            foreach (var resource in module.Resources)
+            {
+                if (string.IsNullOrWhiteSpace(resource.Url))
+                {
+                    invalidUrls.Add($"Module '{module.Title}' - Resource '{resource.Title}': Missing URL");
+                }
+                else if (!Uri.TryCreate(resource.Url, UriKind.Absolute, out var uri))
+                {
+                    invalidUrls.Add($"Module '{module.Title}' - Resource '{resource.Title}': Invalid URL format");
+                }
+                else if (uri.Scheme != "http" && uri.Scheme != "https")
+                {
+                    invalidUrls.Add($"Module '{module.Title}' - Resource '{resource.Title}': URL must use HTTP/HTTPS");
+                }
+            }
+        }
+
+        var summary = string.Join("\n", moduleResourceCount.Select(kv => $"- {kv.Key}: {kv.Value} resources"));
+
+        if (!invalidUrls.Any())
+            return $"✅ All resources have valid URLs\n\nResource Summary:\n{summary}";
+
+        return $"❌ Resource URL validation issues:\n{string.Join("\n", invalidUrls)}\n\nResource Summary:\n{summary}";
+    }
+
     // Analysis Tools
     [Description("Get detailed roadmap analysis")]
     public string GetRoadMapAnalysis()
@@ -519,17 +622,91 @@ public class RoadmapService
             module.Resources = new List<LearningResource>();
         }
 
-        // Create a learning resource from the description
-        var resource = new LearningResource
+        // Parse the structured resource format from ResourceGatheringAgent
+        var resources = ParseResourcesFromDescription(resourcesDescription);
+        
+        if (resources.Any())
         {
-            Title = $"Resources for {moduleTitle}",
-            Description = resourcesDescription,
-            Type = ResourceType.Article, // Default type, can be changed later
-            Url = string.Empty // Will be populated later when specific resources are identified
-        };
+            module.Resources.AddRange(resources);
+            return $"Added {resources.Count} resources to module '{moduleTitle}' successfully.";
+        }
+        else
+        {
+            // Fallback: create a single resource if parsing fails
+            var resource = new LearningResource
+            {
+                Title = $"Resources for {moduleTitle}",
+                Description = resourcesDescription,
+                Type = ResourceType.Article,
+                Url = string.Empty
+            };
+            module.Resources.Add(resource);
+            return $"Added general resource description to module '{moduleTitle}' successfully.";
+        }
+    }
 
-        module.Resources.Add(resource);
-        return $"Resources added to module '{moduleTitle}' successfully.";
+    private List<LearningResource> ParseResourcesFromDescription(string description)
+    {
+        var resources = new List<LearningResource>();
+        
+        // Split by "**RESOURCE" to find individual resources
+        var resourceBlocks = description.Split(new[] { "**RESOURCE" }, StringSplitOptions.RemoveEmptyEntries);
+        
+        foreach (var block in resourceBlocks)
+        {
+            // Skip if this block doesn't contain resource data (like the first block which might be empty or just whitespace)
+            if (string.IsNullOrWhiteSpace(block) || !block.Contains("- Title:"))
+                continue;
+                
+            var resource = ParseSingleResource(block);
+            if (resource != null && !string.IsNullOrWhiteSpace(resource.Url))
+            {
+                resources.Add(resource);
+            }
+        }
+        
+        return resources;
+    }
+
+    private LearningResource? ParseSingleResource(string block)
+    {
+        var lines = block.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var resource = new LearningResource();
+        
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            
+            if (trimmed.StartsWith("- Title:", StringComparison.OrdinalIgnoreCase))
+            {
+                resource.Title = trimmed.Substring(8).Trim();
+            }
+            else if (trimmed.StartsWith("- URL:", StringComparison.OrdinalIgnoreCase))
+            {
+                resource.Url = trimmed.Substring(6).Trim();
+            }
+            else if (trimmed.StartsWith("- Type:", StringComparison.OrdinalIgnoreCase))
+            {
+                var typeStr = trimmed.Substring(7).Trim();
+                if (Enum.TryParse<ResourceType>(typeStr, true, out var resourceType))
+                {
+                    resource.Type = resourceType;
+                }
+            }
+            else if (trimmed.StartsWith("- Source:", StringComparison.OrdinalIgnoreCase))
+            {
+                resource.Source = trimmed.Substring(9).Trim();
+            }
+            else if (trimmed.StartsWith("- Description:", StringComparison.OrdinalIgnoreCase))
+            {
+                resource.Description = trimmed.Substring(14).Trim();
+            }
+        }
+        
+        // Only return if we have at least title and URL
+        return !string.IsNullOrWhiteSpace(resource.Title) && !string.IsNullOrWhiteSpace(resource.Url) 
+            ? resource 
+            : null;
     }
 
     /// <summary>

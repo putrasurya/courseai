@@ -87,14 +87,24 @@ namespace PathWeaver.Agents
 
             **CRITICAL RULE**: NO MODULE SHALL BE LEFT WITHOUT TOPICS. NO TOPIC SHALL BE LEFT WITHOUT KEY CONCEPTS. NO MODULE SHALL BE LEFT WITHOUT RESOURCES. Verify completion before proceeding.
 
-            RESOURCE GATHERING:
-            - After creating each module, use ResourceGatheringAgent to find relevant learning resources
-            - Focus on high-quality, current resources that align with the module's learning objectives
-            - Include diverse resource types: tutorials, documentation, interactive exercises, video content
-            - Ensure resources match the user's skill level and learning preferences
-            - **MANDATORY**: Every module must have resources - use quality validation to enforce this
+            RESOURCE GATHERING (MANDATORY WORKFLOW):
+            1. After creating each module, IMMEDIATELY use ResourceGatheringAgent to find relevant learning resources  
+            2. Focus on high-quality, current resources with ACTUAL working URLs
+            3. Include diverse resource types: tutorials, documentation, interactive exercises, video content
+            4. Ensure resources match the user's skill level and learning preferences
+            5. **MANDATORY VALIDATION**: After ResourceGatheringAgent finishes, use ValidateModuleResourceQuality to check URLs
+            6. **FAILURE RESPONSE**: If validation fails, call ResourceGatheringAgent AGAIN until validation passes
+            7. **FINAL CHECK**: Use ValidateAllResourceUrls before declaring roadmap complete
+            8. Aim for 5-8 diverse, high-quality resources per module from reputable sources
 
-            Always use the RoadMap tools to build the actual roadmap structure with proper granularity.
+            **QUALITY ENFORCEMENT SEQUENCE** (Follow this EXACTLY):
+            - Create module → Add topics → Add key concepts → Call ResourceGatheringAgent
+            - Validate with ValidateModuleResourceQuality → If fails, call ResourceGatheringAgent again
+            - Repeat until validation shows ✅ for ALL modules
+            - Use ValidateRoadmapQuality as final check before completion
+            - If ANY validation fails, fix it IMMEDIATELY before proceeding
+
+            Always use the RoadMap tools to build the actual roadmap structure with proper granularity and validated resources.
             """;
         public IList<AITool> Tools { get; } = [];
 
@@ -146,7 +156,11 @@ namespace PathWeaver.Agents
                 AIFunctionFactory.Create(_roadmapService.ValidateRoadmapQuality),
                 AIFunctionFactory.Create(_roadmapService.GetTopicsNeedingConcepts),
                 AIFunctionFactory.Create(_roadmapService.GetModulesNeedingTopics),
-                AIFunctionFactory.Create(_roadmapService.GetModulesNeedingResources)
+                AIFunctionFactory.Create(_roadmapService.GetModulesNeedingResources),
+                // Resource quality validation tools
+                AIFunctionFactory.Create(_roadmapService.ValidateModuleResourceQuality),
+                AIFunctionFactory.Create(_roadmapService.ValidateAllResourceUrls),
+                AIFunctionFactory.Create(_roadmapService.GetModulesWithoutResources)
             };
             tools.AddRange(roadMapToolsList);
             
