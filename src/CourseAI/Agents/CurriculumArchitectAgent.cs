@@ -88,15 +88,15 @@ namespace CourseAI.Agents
             """;
         public IList<AITool> Tools { get; } = [];
 
-        private readonly UserProfileService _userProfileService;
+        private readonly LearningProfileService _learningProfileService;
         private readonly RoadmapService _roadmapService;
         private readonly IAgentStatusService _statusService;
         private readonly WebSearchService _webSearchService;
 
-        public CurriculumArchitectAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, RoadmapService roadmapService,
+        public CurriculumArchitectAgent(InstrumentChatClient instrumentChatClient, LearningProfileService learningProfileService, RoadmapService roadmapService,
             IAgentStatusService statusService, WebSearchService webSearchService)
         {
-            _userProfileService = userProfileService;
+            _learningProfileService = learningProfileService;
             _roadmapService = roadmapService;
             _statusService = statusService;
             _webSearchService = webSearchService;
@@ -137,8 +137,8 @@ namespace CourseAI.Agents
 
         public async Task<string> Invoke(string input)
         {
-            // Access current user profile for personalized curriculum design
-            var enhancedInput = $"User Profile Context: {_userProfileService.GetProfileSummary()}\n\nCurriculum Design Request: {input}";
+            // Access current learning profile for personalized curriculum design
+            var enhancedInput = $"Learning Profile Context: {_learningProfileService.GetProfileSummary()}\n\nCurriculum Design Request: {input}";
             
             var response = await Agent.RunAsync(enhancedInput, Thread);
             return response.ToString();

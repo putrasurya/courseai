@@ -19,13 +19,13 @@ namespace CourseAI.Agents
         public string SystemMessage => "You are a refinement agent responsible for updating and modifying a roadmap based on user feedback.";
         public IList<AITool> Tools { get; } = [];
 
-        private readonly UserProfileService _userProfileService;
+        private readonly LearningProfileService _learningProfileService;
         private readonly IAgentStatusService _statusService;
 
-        public RefinementAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
+        public RefinementAgent(InstrumentChatClient instrumentChatClient, LearningProfileService learningProfileService,
             IAgentStatusService statusService)
         {
-            _userProfileService = userProfileService;
+            _learningProfileService = learningProfileService;
             _statusService = statusService;
             
             Agent = new ChatClientAgent(

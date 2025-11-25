@@ -1,6 +1,6 @@
 namespace CourseAI.Models;
 
-public class UserProfile
+public class LearningProfile
 {
     public string? LearningGoal { get; set; }
     public List<string?> KnownSkills { get; set; } = new();

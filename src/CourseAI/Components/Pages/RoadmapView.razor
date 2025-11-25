@@ -20,7 +20,7 @@
     {
         <div class="card shadow-sm mb-3">
             <div class="card-body">
-                <h5 class="card-title">Learning Goal: @roadmap.UserProfile?.LearningGoal</h5>
+                <h5 class="card-title">Learning Goal: @roadmap.LearningProfile?.LearningGoal</h5>
                 <p class="card-text">Status: @roadmap.Status</p>
                 
                 @if (!isSuggestingChanges)
@@ -110,19 +110,22 @@
                                 <div class="card card-body bg-light mb-3 ms-3">
                                     <div class="d-flex justify-content-between align-items-center">
                                         <h6 class="card-title mb-0">Topic @topic.Order: @topic.Title</h6>
-                                        <div>
-                                            <span class="badge bg-info me-2">Confidence: @topic.ConfidenceScore%</span>
-                                            <button @onclick="() => StartQuiz(topic)" class="btn btn-sm btn-secondary" disabled="@(isQuizzing.ContainsKey(topic) && isQuizzing[topic])">
-                                                 @if (isQuizzing.ContainsKey(topic) && isQuizzing[topic])
-                                                {
-                                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                }
-                                                else
-                                                {
-                                                    <span>Quiz Me</span>
-                                                }
-                                            </button>
-                                        </div>
+                                        @if (roadmap.Status != RoadmapStatus.Draft)
+                                        {
+                                            <div>
+                                                <span class="badge bg-info me-2">Confidence: @topic.ConfidenceScore%</span>
+                                                <button @onclick="() => StartQuiz(topic)" class="btn btn-sm btn-secondary" disabled="@(isQuizzing.ContainsKey(topic) && isQuizzing[topic])">
+                                                     @if (isQuizzing.ContainsKey(topic) && isQuizzing[topic])
+                                                    {
+                                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Quiz Me</span>
+                                                    }
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                     <p class="card-text mt-2">@topic.Description</p>
                                     

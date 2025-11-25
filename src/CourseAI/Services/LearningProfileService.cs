@@ -3,14 +3,14 @@ using System.Text.Json;
 
 namespace CourseAI.Services;
 
-public class UserProfileService
+public class LearningProfileService
 {
-    private UserProfile _currentProfile;
+    private LearningProfile _currentProfile;
     private readonly object _lock = new object();
 
-    public event Action<UserProfile>? ProfileChanged;
+    public event Action<LearningProfile>? ProfileChanged;
 
-    public UserProfile CurrentProfile
+    public LearningProfile CurrentProfile
     {
         get
         {
@@ -29,9 +29,9 @@ public class UserProfileService
         }
     }
 
-    public UserProfileService()
+    public LearningProfileService()
     {
-        _currentProfile = new UserProfile();
+        _currentProfile = new LearningProfile();
     }
 
     // Profile update methods
@@ -86,7 +86,7 @@ public class UserProfileService
         lock (_lock)
         {
             if (_currentProfile == null)
-                return "No user profile available.";
+                return "No learning profile available.";
 
             return $"Learning Goal: {_currentProfile.LearningGoal ?? "Not specified"}\n" +
                    $"Experience Level: {_currentProfile.ExperienceLevel ?? "Not specified"}\n" +
@@ -108,21 +108,21 @@ public class UserProfileService
 
     public void ClearProfile()
     {
-        CurrentProfile = new UserProfile();
+        CurrentProfile = new LearningProfile();
     }
 
-    public void SetProfile(UserProfile profile)
+    public void SetProfile(LearningProfile profile)
     {
-        CurrentProfile = profile ?? new UserProfile();
+        CurrentProfile = profile ?? new LearningProfile();
     }
 
-    public UserProfile GetProfileCopy()
+    public LearningProfile GetProfileCopy()
     {
         lock (_lock)
         {
             // Return a deep copy to prevent external modifications
             var json = JsonSerializer.Serialize(_currentProfile);
-            return JsonSerializer.Deserialize<UserProfile>(json) ?? new UserProfile();
+            return JsonSerializer.Deserialize<LearningProfile>(json) ?? new LearningProfile();
         }
     }
 }

@@ -16,17 +16,17 @@ namespace CourseAI.Agents
         public AgentThread? Thread { get; set; }
         public AIAgent Agent { get; init; }
         public string Name => "PlannerAgent";
-        public string Description => "Gathers user information and builds complete UserProfile through conversation";
+        public string Description => "Gathers user information and builds complete LearningProfile through conversation";
         public string SystemMessage => """
             You are a planner agent specializing in user interaction and goal elicitation.
             Your primary role is to engage in a conversation with the user to deeply understand their learning objectives, existing knowledge, and preferences.
             
-            You have access to tools to build and update a UserProfile:
-            - updateUserProfile: Add or update information in the user profile
-            - removeFromUserProfile: Remove specific items from lists in the user profile
-            - getUserProfileSummary: Get a readable summary of the current user profile
+            You have access to tools to build and update a LearningProfile:
+            - updateLearningProfile: Add or update information in the learning profile
+            - removeFromLearningProfile: Remove specific items from lists in the learning profile
+            - getLearningProfileSummary: Get a readable summary of the current learning profile
             
-            Fields in UserProfile object is: ExperienceLevel,KnownSkills,LearningGoal,PreferredLearningStyles
+            Fields in LearningProfile object is: ExperienceLevel,KnownSkills,LearningGoal,PreferredLearningStyles
 
             Process:
             1. Start by asking about their main learning goal
@@ -40,15 +40,15 @@ namespace CourseAI.Agents
 
         public IList<AITool> Tools { get; } = [];
 
-        private readonly UserProfileService _userProfileService;
-        private readonly UserProfileToolsService _userProfileToolsService;
+        private readonly LearningProfileService _learningProfileService;
+        private readonly LearningProfileToolsService _learningProfileToolsService;
         private readonly IAgentStatusService _statusService;
 
-        public PlannerAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, UserProfileToolsService userProfileToolsService,
+        public PlannerAgent(InstrumentChatClient instrumentChatClient, LearningProfileService learningProfileService, LearningProfileToolsService learningProfileToolsService,
             IAgentStatusService statusService)
         {
-            _userProfileService = userProfileService;
-            _userProfileToolsService = userProfileToolsService;
+            _learningProfileService = learningProfileService;
+            _learningProfileToolsService = learningProfileToolsService;
             _statusService = statusService;
             
             Agent = new ChatClientAgent(
@@ -56,7 +56,7 @@ namespace CourseAI.Agents
                 name: Name,
                 description: Description,
                 instructions: SystemMessage,
-                tools: _userProfileToolsService.GetPlannerTools())
+                tools: _learningProfileToolsService.GetPlannerTools())
                 .AsBuilder()
                 .Use(runFunc:CustomAgentRunMiddleware, runStreamingFunc:null)
                 .Build();;
@@ -79,20 +79,20 @@ namespace CourseAI.Agents
 
         public async Task<string> Invoke(string input)
         {
-            var profileSummary = _userProfileService.GetProfileSummary();
-            var contextualInput = string.IsNullOrEmpty(profileSummary) || profileSummary == "No user profile available." 
+            var profileSummary = _learningProfileService.GetProfileSummary();
+            var contextualInput = string.IsNullOrEmpty(profileSummary) || profileSummary == "No learning profile available." 
                 ? input 
-                : $"Current User Profile Context: {profileSummary}\n\nUser Input: {input}";
+                : $"Current Learning Profile Context: {profileSummary}\n\nUser Input: {input}";
             
             var response = await Agent.RunAsync(contextualInput, Thread);
             return response.ToString();
         }
 
-        public UserProfile? GetCurrentUserProfile()
+        public LearningProfile? GetCurrentLearningProfile()
         {
-            return _userProfileService.CurrentProfile;
+            return _learningProfileService.CurrentProfile;
         }
 
-        // Tool functions that the AI can call are now handled by UserProfileToolsService
+        // Tool functions that the AI can call are now handled by LearningProfileToolsService
     }
 }

@@ -40,7 +40,7 @@ namespace CourseAI.Agents
             - **ResourceGatheringAgent**: Finds and curates learning resources for each module using web search capabilities
             - **RoadMap Tools**: Create, update, and manage the roadmap structure with modules, topics, and concepts
             - **Quality Validation Tools**: ValidateRoadmapQuality, GetTopicsNeedingConcepts, and GetModulesNeedingTopics to ensure completeness
-            - **UserProfile Tools**: Access user context for personalization
+            - **LearningProfile Tools**: Access user context for personalization
 
             COORDINATION STRATEGY:
             1. Initialize new roadmap using user profile context
@@ -108,23 +108,23 @@ namespace CourseAI.Agents
             """;
         public IList<AITool> Tools { get; } = [];
 
-        private readonly UserProfileService _userProfileService;
-        private readonly UserProfileToolsService _userProfileToolsService;
+        private readonly LearningProfileService _learningProfileService;
+        private readonly LearningProfileToolsService _learningProfileToolsService;
         private readonly RoadmapService _roadmapService;
         private readonly ResourceGatheringAgent _resourceGatheringAgent;
         private readonly ICurriculumArchitectAgent _curriculumArchitectAgent;
         private readonly IPathOptimizationAgent _pathOptimizationAgent;
         private readonly IAgentStatusService _statusService;
 
-        public StructuringAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService,
-            UserProfileToolsService userProfileToolsService, RoadmapService roadmapService,
+        public StructuringAgent(InstrumentChatClient instrumentChatClient, LearningProfileService learningProfileService,
+            LearningProfileToolsService learningProfileToolsService, RoadmapService roadmapService,
             ICurriculumArchitectAgent curriculumArchitectAgent,
             IPathOptimizationAgent pathOptimizationAgent,
             IAgentStatusService statusService,
             ResourceGatheringAgent resourceGatheringAgent)
         {
-            _userProfileService = userProfileService;
-            _userProfileToolsService = userProfileToolsService;
+            _learningProfileService = learningProfileService;
+            _learningProfileToolsService = learningProfileToolsService;
             _roadmapService = roadmapService;
             _curriculumArchitectAgent = curriculumArchitectAgent;
             _pathOptimizationAgent = pathOptimizationAgent;
@@ -138,8 +138,8 @@ namespace CourseAI.Agents
                 AIFunctionFactory.Create(_resourceGatheringAgent.GatherResourcesForModuleAsync)
             };
             
-            // Add basic UserProfile tools (summary, status, basic updates)
-            tools.AddRange(_userProfileToolsService.GetStructuringTools());
+            // Add basic LearningProfile tools (summary, status, basic updates)
+            tools.AddRange(_learningProfileToolsService.GetStructuringTools());
             
             // Add RoadMap tools for building the roadmap
             var roadMapToolsList = new List<AIFunction>
