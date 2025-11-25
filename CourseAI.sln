@@ -7,7 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CourseAI", "src\CourseAI\CourseAI.csproj", "{A54DD7E3-BC05-4501-A4E6-E38F90CD8D08}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CourseAI.Tests", "CourseAI.Tests\CourseAI.Tests.csproj", "{D79A6B42-D581-47CB-988A-C4081C5963A4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CourseAI.Tests", "tests\CourseAI.Tests\CourseAI.Tests.csproj", "{D79A6B42-D581-47CB-988A-C4081C5963A4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

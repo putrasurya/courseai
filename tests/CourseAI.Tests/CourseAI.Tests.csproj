@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\CourseAI\CourseAI.csproj" />
+    <ProjectReference Include="..\..\src\CourseAI\CourseAI.csproj" />
   </ItemGroup>
 
 </Project>
