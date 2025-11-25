@@ -77,15 +77,6 @@ Visit `https://localhost:5001` → **Watch 7 specialized AI agents collaborate t
 └── ✨ RefinementAgent (Feedback Processing Intelligence)
 ```
 
-### **What Each AI Agent Does For You**
-
-- **🎭 OrchestratorAgent**: Coordinates the entire process, makes smart decisions about what happens next
-- **📋 PlannerAgent**: Understands your goals through natural conversation
-- **🎓 CurriculumArchitectAgent**: Designs your learning path using proven educational methods
-- **🛤️ PathOptimizationAgent**: Organizes everything in the most efficient order
-- **📚 ResourceGatheringAgent**: Searches the web for the best tutorials, courses, and documentation
-- **✨ RefinementAgent**: Improves your roadmap based on your feedback
-
 ### **The User Experience vs. Technical Complexity**
 
 **What You Experience:** Simple conversation → Perfect learning roadmap  
@@ -111,28 +102,6 @@ Visit `https://localhost:5001` → **Watch 7 specialized AI agents collaborate t
 - **Async/Await Patterns** - High-performance concurrent operations
 
 ---
-
-## 🚀 Why This Project Demonstrates Innovation
-
-**A sophisticated solution addressing real learning challenges:**
-
-### **🎯 Problem-Solving Approach**
-- **Challenge**: Learning path confusion and resource overwhelm
-- **Solution**: Intelligent AI curation and personalized guidance  
-- **Impact**: Reduces learning time while improving outcomes
-- **Scale**: Applicable to any learning domain or skill level
-
-### **🤖 Technical Innovation**
-- **Multi-Agent Coordination**: 7 specialized AI agents working autonomously
-- **Intelligent Workflow**: AI determines optimal progression without intervention
-- **Real-Time Integration**: Live web search and quality assessment
-- **Conversational Intelligence**: Natural language understanding and response
-
-### **🔧 Software Architecture**
-- **Clean Design**: SOLID principles, dependency injection, separation of concerns
-- **Modern Stack**: Latest .NET 8, Blazor Server, async/await patterns
-- **Production Quality**: Comprehensive error handling, validation, and logging
-- **Scalable Foundation**: Modular architecture supporting feature expansion
 
 ## 🔧 Configuration
 
