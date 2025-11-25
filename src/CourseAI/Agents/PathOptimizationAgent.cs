@@ -65,14 +65,14 @@ namespace CourseAI.Agents
             """;
         public IList<AITool> Tools { get; } = [];
 
-        private readonly UserProfileService _userProfileService;
+        private readonly LearningProfileService _learningProfileService;
         private readonly RoadmapService _roadmapService;
         private readonly IAgentStatusService _statusService;
 
-        public PathOptimizationAgent(InstrumentChatClient instrumentChatClient, UserProfileService userProfileService, RoadmapService roadmapService,
+        public PathOptimizationAgent(InstrumentChatClient instrumentChatClient, LearningProfileService learningProfileService, RoadmapService roadmapService,
             IAgentStatusService statusService)
         {
-            _userProfileService = userProfileService;
+            _learningProfileService = learningProfileService;
             _roadmapService = roadmapService;
             _statusService = statusService;
             
@@ -111,8 +111,8 @@ namespace CourseAI.Agents
 
         public async Task<string> Invoke(string input)
         {
-            // Access current user profile for personalized path optimization
-            var enhancedInput = $"User Profile Context: {_userProfileService.GetProfileSummary()}\n\nPath Optimization Request: {input}";
+            // Access current learning profile for personalized path optimization
+            var enhancedInput = $"Learning Profile Context: {_learningProfileService.GetProfileSummary()}\n\nPath Optimization Request: {input}";
             
             var response = await Agent.RunAsync(enhancedInput, Thread);
             return response.ToString();

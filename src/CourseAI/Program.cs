@@ -30,8 +30,8 @@ builder.Services.AddSingleton<InstrumentChatClient>();
 builder.Services.AddSingleton<IAgentStatusService, AgentStatusService>();
 
 // Register application services
-builder.Services.AddSingleton<UserProfileService>();
-builder.Services.AddSingleton<UserProfileToolsService>();
+builder.Services.AddSingleton<LearningProfileService>();
+builder.Services.AddSingleton<LearningProfileToolsService>();
 builder.Services.AddSingleton<RoadmapService>();
 builder.Services.AddHttpClient<WebSearchService>();
 builder.Services.AddSingleton<WebSearchService>();
