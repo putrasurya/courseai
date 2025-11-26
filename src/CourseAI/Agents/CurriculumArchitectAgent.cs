@@ -128,7 +128,6 @@ namespace CourseAI.Agents
             AIAgent innerAgent,
             CancellationToken cancellationToken)
         {
-            _statusService.SetStatus("CurriculumArchitectAgent", "Designing curriculum framework...");
             var response = await innerAgent.RunAsync(messages, thread, options, cancellationToken).ConfigureAwait(false);
             Console.WriteLine($"Agent Id: {innerAgent.Id}");
             Console.WriteLine($"Agent Name: {innerAgent.Name}");
