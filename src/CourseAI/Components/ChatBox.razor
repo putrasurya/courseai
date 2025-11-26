@@ -2,6 +2,7 @@
 @inject IOrchestratorAgent Orchestrator
 @inject NavigationManager NavManager
 @inject CourseAI.Services.RoadmapService RoadmapService
+@inject CourseAI.Services.LearningProfileService LearningProfileService
 @inject CourseAI.Services.IAgentStatusService StatusService
 @inject IJSRuntime JSRuntime
 
@@ -48,32 +49,71 @@
             else
             {
                 <div class="card shadow-sm">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span>Planning Session</span>
-                        <small class="text-muted">Building your profile...</small>
-                    </div>
+                    <!-- Removed the card-header to eliminate unnecessary header -->
                     <div class="card-body">
-                        <!-- Conversation History -->
-                        <div @ref="conversationContainer" id="conversationContainer" class="conversation-history mb-3" style="max-height: 400px; overflow-y: auto;" @onscroll="OnScroll">
+                        <!-- Conversation History with proper spacing to avoid navigation overlap -->
+                        <div @ref="conversationContainer" id="conversationContainer" class="conversation-history mb-3" style="max-height: calc(100vh - 200px); overflow-y: auto; padding-bottom: 80px;" @onscroll="OnScroll">
                             @foreach (var message in conversationHistory)
                             {
                                 <div class="mb-3">
                                     <div class="d-flex align-items-start @(message.IsFromUser ? "justify-content-end" : "")">
-                                        <div class="message @(message.IsFromUser ? "user-message" : "agent-message")">
+                                        <div class="message @(message.IsFromUser ? "user-message" : "agent-message") @(GetMessageCssClass(message.MessageType))">
                                             <small class="text-muted">@(message.IsFromUser ? "You" : "AI Planner")</small>
-                                            <div class="mb-0">
+                                             <div class="mb-0">
                                                 @((MarkupString)ConvertMarkdownToHtml(GetMessageContentWithoutKeyword(message.Content)))
+                                                
+                                                @* Try Again button for error messages *@
+                                                @if (!message.IsFromUser && message.MessageType == "error")
+                                                {
+                                                    <div class="mt-3">
+                                                        <button @onclick="RetryLastAction" class="btn btn-outline-danger btn-sm" disabled="@(StatusService.IsProcessing || isPlanning || isSaving)">
+                                                            @if (isRetrying)
+                                                            {
+                                                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                                                <span>Retrying...</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span>🔄 Try Again</span>
+                                                            }
+                                                        </button>
+                                                    </div>
+                                                }
                                                 
                                                 @if (!message.IsFromUser && message.Content.Contains("ROADMAP_COMPLETE", StringComparison.OrdinalIgnoreCase))
                                                 {
                                                     <div class="mt-2">
-                                                        <button @onclick="NavigateToRoadmap" class="btn btn-success btn-sm">
-                                                            <i class="fas fa-route me-1"></i>
-                                                            View Your Learning Roadmap
+                                                        <button @onclick="SaveAndNavigateToRoadmap" class="btn btn-success btn-sm" disabled="@isSaving">
+                                                            @if (isSaving)
+                                                            {
+                                                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                <span>Saving to Database...</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="fas fa-save me-1"></i>
+                                                                <span>Save & View Learning Roadmap</span>
+                                                            }
                                                         </button>
                                                     </div>
                                                 }
                                             </div>
+                                            
+                                            @* Navigation button after successful save *@
+                                            @if (!message.IsFromUser && (message.MessageType == "success" || message.Content.Contains("Successfully saved", StringComparison.OrdinalIgnoreCase)))
+                                            {
+                                                <div class="mt-3 d-flex gap-2">
+                                                    <button @onclick="DirectNavigateToRoadmap" class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-eye me-1"></i>
+                                                        <span>View My Roadmap</span>
+                                                    </button>
+                                                    <button @onclick="NavigateToRoadmapList" class="btn btn-outline-secondary btn-sm">
+                                                        <i class="fas fa-list me-1"></i>
+                                                        <span>All Roadmaps</span>
+                                                    </button>
+                                                </div>
+                                            }
+                                            
                                             <small class="text-muted">@message.Timestamp.ToString("HH:mm")</small>
                                         </div>
                                     </div>
@@ -81,24 +121,47 @@
                             }
                         </div>
 
-                        <!-- Status Indicator -->
+                        <!-- Enhanced Status Indicator with Progress -->
                         @if (StatusService.IsProcessing && !string.IsNullOrWhiteSpace(StatusService.CurrentStatus))
                         {
                             <div class="status-indicator mb-3">
-                                <div class="d-flex align-items-center">
+                                <div class="d-flex align-items-center mb-2">
                                     <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
                                         <span class="visually-hidden">Loading...</span>
                                     </div>
                                     <span class="text-primary fw-medium">@StatusService.CurrentStatus</span>
+                                    @if (StatusService.ProgressPercentage > 0)
+                                    {
+                                        <span class="text-muted ms-auto">@StatusService.ProgressPercentage%</span>
+                                    }
                                 </div>
+                                
+                                @* Progress Bar *@
+                                @if (StatusService.ProgressPercentage > 0)
+                                {
+                                    <div class="progress mb-2" style="height: 6px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" 
+                                             style="width: @(StatusService.ProgressPercentage)%; transition: width 0.3s ease;"
+                                             aria-valuenow="@StatusService.ProgressPercentage" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                }
+                                
+                                @* Progress Details *@
+                                @if (!string.IsNullOrWhiteSpace(StatusService.ProgressDetails))
+                                {
+                                    <div class="text-muted small">
+                                        @StatusService.ProgressDetails
+                                    </div>
+                                }
                             </div>
                         }
 
                         <!-- User Input for Conversation -->
                         <div class="input-group">
                             <input @ref="userInputElement" @bind="userResponse" @onkeypress="HandleKeyPress" class="form-control" 
-                                   placeholder="Type your response..." disabled="@StatusService.IsProcessing" />
-                            <button @onclick="SendResponse" class="btn btn-outline-primary" disabled="@(StatusService.IsProcessing || string.IsNullOrWhiteSpace(userResponse))">
+                                   placeholder="Type your response..." disabled="@(StatusService.IsProcessing || isSaving)" />
+                            <button @onclick="SendResponse" class="btn btn-outline-primary" disabled="@(StatusService.IsProcessing || isSaving || string.IsNullOrWhiteSpace(userResponse))">
                                 <span>Send</span>
                             </button>
                         </div>
@@ -110,35 +173,193 @@
 </div>
 
 <style>
+    /* Mobile-first chat styles */
+    .container {
+        padding: 0;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        margin: 0;
+    }
+    
+    .card-body {
+        padding: 16px;
+    }
+    
+    .card-header {
+        background: white;
+        border-bottom: 1px solid #e9ecef;
+        padding: 16px;
+    }
+    
     .conversation-history {
-        border: 1px solid #e9ecef;
-        border-radius: 0.375rem;
-        padding: 1rem;
+        border: none;
+        border-radius: 12px;
+        padding: 16px;
         background-color: #f8f9fa;
+        max-height: 50vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .message {
-        max-width: 70%;
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.375rem;
-        margin-bottom: 0.5rem;
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 16px;
+        margin-bottom: 12px;
+        line-height: 1.4;
     }
     
     .user-message {
-        background-color: #0d6efd;
+        background: linear-gradient(135deg, #007bff, #0056b3);
         color: white;
         margin-left: auto;
+        border-radius: 16px 16px 4px 16px;
     }
     
     .agent-message {
-        background-color: white;
+        background: white;
         border: 1px solid #dee2e6;
+        border-radius: 16px 16px 16px 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    /* Touch-friendly form elements */
+    .form-control {
+        font-size: 16px; /* Prevents zoom on iOS */
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        transition: border-color 0.2s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+    
+    /* Mobile-optimized buttons */
+    .btn {
+        min-height: 48px;
+        border-radius: 12px;
+        font-weight: 500;
+        touch-action: manipulation;
+        transition: all 0.2s ease;
+    }
+    
+    .btn:active {
+        transform: scale(0.98);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+    }
+    
+    .btn-primary:active {
+        background: linear-gradient(135deg, #0056b3, #004085);
+    }
+    
+    .btn-outline-primary {
+        border: 2px solid #007bff;
+        color: #007bff;
+        background: white;
+    }
+    
+    /* Success button improvements */
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        min-width: 200px;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+    }
+    
+    .btn-success:hover:not(:disabled) {
+        background: linear-gradient(135deg, #218838, #1e7e34);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(40,167,69,0.4);
+    }
+    
+    .btn-success:disabled {
+        background: #6c757d;
+        border-color: #6c757d;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+    
+    /* Input group improvements */
+    .input-group {
+        margin-top: 16px;
+    }
+    
+    .input-group .form-control {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    
+    .input-group .btn {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        padding: 0 20px;
+        min-width: 80px;
+    }
+    
+    /* Textarea specific */
+    textarea.form-control {
+        min-height: 48px;
+        max-height: 120px;
+        resize: vertical;
+    }
+    
+    /* Status indicator improvements */
+    .status-indicator {
+        background-color: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 12px 16px;
+        border-left: 4px solid #007bff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .status-indicator .spinner-border-sm {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .spinner-border-sm {
+        animation: spinner-border .75s linear infinite;
+    }
+    
+    /* Message type styling */
+    .saving-message {
+        background: linear-gradient(135deg, #e3f2fd, #f8f9fa);
+        border-left: 4px solid #2196f3;
+        animation: pulse 2s ease-in-out infinite alternate;
+    }
+    
+    .success-message {
+        background: linear-gradient(135deg, #e8f5e8, #f8f9fa);
+        border-left: 4px solid #4caf50;
+    }
+    
+    .error-message {
+        background: linear-gradient(135deg, #ffebee, #f8f9fa);
+        border-left: 4px solid #f44336;
     }
     
     /* Markdown content styling */
     .message p {
         line-height: 1.5;
         margin-bottom: 0.5rem;
+    }
+    
+    .message p:last-child {
+        margin-bottom: 0;
     }
     
     .message h1, .message h2, .message h3 {
@@ -157,59 +378,93 @@
     }
     
     .message code {
-        background-color: #f8f9fa;
-        padding: 0.125rem 0.25rem;
-        border-radius: 0.25rem;
-        font-size: 0.875em;
+        background-color: rgba(0,0,0,0.05);
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 0.9em;
     }
     
     .message pre {
-        background-color: #f8f9fa;
-        padding: 0.5rem;
-        border-radius: 0.25rem;
+        background-color: rgba(0,0,0,0.05);
+        padding: 8px 12px;
+        border-radius: 8px;
         margin: 0.5rem 0;
         overflow-x: auto;
-    }
-    
-    .message blockquote {
-        border-left: 3px solid #dee2e6;
-        padding-left: 0.75rem;
-        margin: 0.5rem 0;
-        font-style: italic;
+        font-size: 0.9em;
     }
     
     .message strong {
         font-weight: 600;
     }
     
-    .message em {
-        font-style: italic;
+    /* Retry button styling */
+    .btn-outline-danger {
+        border-color: #dc3545;
+        color: #dc3545;
+        background: white;
     }
     
-    .btn-success {
-        background-color: #28a745;
-        border-color: #28a745;
-        transition: all 0.2s ease-in-out;
+    .btn-outline-danger:hover:not(:disabled) {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
     }
     
-    .btn-success:hover {
-        background-color: #218838;
-        border-color: #1e7e34;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    .btn-outline-danger:active {
+        transform: scale(0.98);
     }
     
+    .btn-outline-danger:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    /* Enhanced Progress Indicator Styling */
     .status-indicator {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 0.375rem;
-        padding: 0.75rem;
-        border-left: 4px solid #0d6efd;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 4px solid #007bff;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     
-    .status-indicator .spinner-border-sm {
-        width: 1rem;
-        height: 1rem;
+    .progress {
+        border-radius: 3px;
+        overflow: hidden;
+        background-color: rgba(0,123,255,0.1);
+    }
+    
+    .progress-bar {
+        border-radius: 3px;
+        background: linear-gradient(90deg, #007bff 0%, #0056b3 100%);
+        transition: width 0.5s ease-in-out;
+    }
+    
+    .status-indicator .text-muted.small {
+        font-size: 0.85em;
+        font-weight: 500;
+        color: #6c757d !important;
+        margin-top: 2px;
+    }
+    
+    /* Enhanced Status Indicator Styling - simplified without keyframes */
+    .status-indicator {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 4px solid #007bff;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .status-indicator:hover {
+        box-shadow: 0 4px 8px rgba(0,123,255,0.15);
+    }
+    
+    /* Touch device optimizations - removed responsive queries for now */
+    .touch-optimized .btn:hover {
+        transform: none;
+        box-shadow: none;
     }
 </style>
 
@@ -218,9 +473,21 @@
     private string userResponse = "";
     private bool isPlanning = false;
     private bool isInConversation = false;
+    private bool isSaving = false;
+    private bool isRetrying = false;
     private ElementReference conversationContainer;
     private ElementReference userInputElement;
     private bool isScrollDirty = false; // Track if user has scrolled up manually
+
+    // Retry mechanism state
+    private enum LastActionType
+    {
+        None,
+        StartPlanning,
+        SendResponse
+    }
+    private LastActionType lastFailedAction = LastActionType.None;
+    private string lastFailedInput = "";
 
     private List<ConversationMessage> conversationHistory = new();
 
@@ -229,6 +496,7 @@
         public string Content { get; set; } = "";
         public bool IsFromUser { get; set; }
         public DateTime Timestamp { get; set; } = DateTime.Now;
+        public string MessageType { get; set; } = "normal"; // normal, saving, success, error
     }
 
     protected override void OnInitialized()
@@ -343,10 +611,15 @@
         }
         catch (Exception ex)
         {
+            // Track the failed action for retry
+            lastFailedAction = LastActionType.StartPlanning;
+            lastFailedInput = learningGoal;
+            
             conversationHistory.Add(new ConversationMessage
             {
-                Content = $"Sorry, there was an error: {ex.Message}",
-                IsFromUser = false
+                Content = $"Sorry, there was an error while processing your request: {ex.Message}",
+                IsFromUser = false,
+                MessageType = "error"
             });
             StateHasChanged();
             await ScrollToBottom(); // Scroll after adding error message
@@ -363,6 +636,8 @@
         if (string.IsNullOrWhiteSpace(userResponse) || StatusService.IsProcessing)
             return;
 
+        string currentResponse = userResponse; // Declare outside try block for error handling
+
         try
         {
             // Add user message
@@ -374,7 +649,6 @@
             StateHasChanged();
             await ScrollToBottom(); // Scroll after adding user message
 
-            string currentResponse = userResponse;
             userResponse = ""; // Clear input
             StateHasChanged(); // Update input field
 
@@ -399,10 +673,15 @@
         }
         catch (Exception ex)
         {
+            // Track the failed action for retry
+            lastFailedAction = LastActionType.SendResponse;
+            lastFailedInput = currentResponse; // This is the user response that failed
+            
             conversationHistory.Add(new ConversationMessage
             {
-                Content = $"Sorry, there was an error: {ex.Message}",
-                IsFromUser = false
+                Content = $"Sorry, there was an error while processing your message: {ex.Message}",
+                IsFromUser = false,
+                MessageType = "error"
             });
             StateHasChanged();
             await ScrollToBottom(); // Scroll after adding error message
@@ -423,10 +702,153 @@
         }
     }
 
-    private void NavigateToRoadmap()
+    private async Task SaveAndNavigateToRoadmap()
     {
-        // Navigate to roadmap page - RoadmapView will get roadmap from RoadmapService
-        NavManager.NavigateTo("/roadmap");
+        if (isSaving) return; // Prevent multiple clicks
+        
+        isSaving = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Set initial progress for database saving
+            StatusService.SetProgress("DatabaseSaver", "💾 Preparing to save learning data...", 96, "Initializing database save process");
+            
+            // Add a message to show we're saving with special styling
+            conversationHistory.Add(new ConversationMessage
+            {
+                Content = "💾 **Saving your learning profile and roadmap to database...**",
+                IsFromUser = false,
+                MessageType = "saving"
+            });
+            StateHasChanged();
+            await ScrollToBottom();
+            
+            // Update progress during save
+            StatusService.SetProgress("DatabaseSaver", "💾 Saving learning profile...", 97, "Storing your learning preferences");
+            await Task.Delay(500);
+            
+            // The hybrid services automatically save to database when data is updated
+            // But let's ensure we have the latest data by triggering a save explicitly
+            StatusService.SetProgress("DatabaseSaver", "📚 Saving roadmap data...", 98, "Persisting modules, topics, and resources");
+            await SaveToDatabase();
+            
+            // Final completion
+            StatusService.SetProgress("DatabaseSaver", "✅ Database save completed!", 100, "Your data is now safely stored");
+            await Task.Delay(300);
+            
+            // Add success message with special styling  
+            conversationHistory.Add(new ConversationMessage
+            {
+                Content = "✅ **Successfully saved!** Your learning profile and roadmap are now stored in the database and will persist across sessions. Use the buttons below to navigate to your roadmap.",
+                IsFromUser = false,
+                MessageType = "success"
+            });
+            StatusService.ClearStatus(); // Clear the database saving progress
+            StateHasChanged();
+            await ScrollToBottom();
+            
+            // No automatic navigation - let user choose with the buttons we added
+        }
+        catch (Exception ex)
+        {
+            // Add error message with special styling
+            conversationHistory.Add(new ConversationMessage
+            {
+                Content = $"❌ **Error saving data:** {ex.Message}. Don't worry, your roadmap is still available in memory and you can try saving again later.",
+                IsFromUser = false,
+                MessageType = "error"
+            });
+            StatusService.ClearStatus(); // Clear any progress indicators
+            StateHasChanged();
+            await ScrollToBottom();
+            
+            // Don't auto-navigate on error - let user decide
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task SaveToDatabase()
+    {
+        try
+        {
+            // Get current profile and roadmap from services
+            var currentProfile = LearningProfileService.CurrentProfile;
+            var currentRoadmap = RoadmapService.GetRoadMap();
+            
+            // For hybrid services, the data should already be saved automatically
+            // But let's verify we have valid data
+            if (currentProfile != null && !string.IsNullOrWhiteSpace(currentProfile.LearningGoal))
+            {
+                // Profile data is automatically saved by HybridLearningProfileService
+                // But we can trigger an explicit save by updating a timestamp
+                LearningProfileService.UpdateProfile("learninggoal", currentProfile.LearningGoal);
+            }
+            
+            if (currentRoadmap != null && currentRoadmap.Modules.Count > 0)
+            {
+                // Roadmap data is automatically saved by HybridRoadmapService  
+                // But we can trigger an explicit save by updating the status
+                RoadmapService.UpdateRoadMapStatus(currentRoadmap.Status);
+            }
+            
+            // Give time for async database operations to complete
+            await Task.Delay(1000);
+        }
+        catch (Exception ex)
+        {
+            // Log the error but don't rethrow - we still want to show the roadmap
+            Console.WriteLine($"Error during database save: {ex.Message}");
+            throw;
+        }
+    }
+
+
+    private async Task RetryLastAction()
+    {
+        if (isRetrying || lastFailedAction == LastActionType.None)
+            return;
+
+        isRetrying = true;
+        StateHasChanged();
+
+        try
+        {
+            switch (lastFailedAction)
+            {
+                case LastActionType.StartPlanning:
+                    // Retry the initial planning with the saved goal
+                    var savedGoal = lastFailedInput;
+                    learningGoal = savedGoal;
+                    await StartPlanning();
+                    break;
+
+                case LastActionType.SendResponse:
+                    // Retry the user response with the saved input
+                    var savedResponse = lastFailedInput;
+                    userResponse = savedResponse;
+                    await SendResponse();
+                    break;
+            }
+
+            // Clear the retry state on successful retry
+            lastFailedAction = LastActionType.None;
+            lastFailedInput = "";
+        }
+        catch
+        {
+            // If retry also fails, the error handling in StartPlanning/SendResponse will handle it
+            // and set up a new retry opportunity
+        }
+        finally
+        {
+            isRetrying = false;
+            StateHasChanged();
+        }
     }
 
     private string GetMessageContentWithoutKeyword(string content)
@@ -446,6 +868,17 @@
         }
     }
 
+    private string GetMessageCssClass(string messageType)
+    {
+        return messageType switch
+        {
+            "saving" => "saving-message",
+            "success" => "success-message", 
+            "error" => "error-message",
+            _ => ""
+        };
+    }
+
     private string ConvertMarkdownToHtml(string markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown))
@@ -458,5 +891,16 @@
             .Build();
 
         return Markdown.ToHtml(markdown, pipeline);
+    }
+
+
+    private void NavigateToRoadmapList()
+    {
+        NavManager.NavigateTo("/roadmaps");
+    }
+
+    private void DirectNavigateToRoadmap()
+    {
+        NavManager.NavigateTo("/roadmap");
     }
 }

@@ -191,9 +191,24 @@ namespace CourseAI.Agents
 
         public async Task<string> Invoke(string input)
         {
-            // Use the Microsoft Agent Framework to coordinate specialized structuring agents
-            var response = await Agent.RunAsync(input, Thread);
-            return response.ToString();
+            // Initialize progress tracking
+            _statusService.SetProgress("StructuringAgent", "🎯 Starting roadmap structuring...", 5, "Preparing to build your learning roadmap");
+            
+            try
+            {
+                // Use the Microsoft Agent Framework to coordinate specialized structuring agents
+                var response = await Agent.RunAsync(input, Thread);
+                
+                // Final completion update
+                _statusService.SetProgress("StructuringAgent", "✅ Learning roadmap completed!", 100, "Your personalized roadmap is ready");
+                
+                return response.ToString();
+            }
+            catch (Exception)
+            {
+                _statusService.ClearStatus();
+                throw;
+            }
         }
     }
 }

@@ -98,7 +98,7 @@ namespace CourseAI.Agents
         [Description("Gather comprehensive learning resources for a specific module and add them directly to the roadmap")]
         public async Task<string> GatherResourcesForModuleAsync(string moduleName, string moduleDescription, string[] topics)
         {
-            _statusService.SetStatus("ResourceGatheringAgent", $"🔍 Gathering resources for {moduleName}...");
+            _statusService.SetProgress("ResourceGatheringAgent", $"🔍 Gathering resources for {moduleName}...", 85, "Searching for learning materials");
 
             try
             {
@@ -136,6 +136,10 @@ namespace CourseAI.Agents
                 """;
 
                 var response = await Agent.RunAsync(prompt, Thread);
+                
+                // Update progress to show resource gathering completion
+                _statusService.SetProgress("ResourceGatheringAgent", $"✅ Resources gathered for {moduleName}", 95, "Resources found and validated");
+                
                 return response.ToString() ?? string.Empty;
             }
             finally

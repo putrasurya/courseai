@@ -1,0 +1,460 @@
+@page "/roadmaps"
+@rendermode InteractiveServer
+@inject CourseAI.Services.RoadmapService RoadmapService
+@inject CourseAI.Services.LearningProfileService LearningProfileService
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+
+@using CourseAI.Models
+@using System.ComponentModel
+
+<PageTitle>My Roadmaps - CourseAI</PageTitle>
+
+<div class="roadmap-list-page">
+    <!-- Header -->
+    <div class="page-header">
+        <h1 class="page-title">📚 My Learning Roadmaps</h1>
+        <p class="page-subtitle">Your personalized learning journey collection</p>
+    </div>
+
+    <!-- Content -->
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-large"></div>
+            <p>Loading your roadmaps...</p>
+        </div>
+    }
+    else if (roadmaps == null || !roadmaps.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <h3>No roadmaps yet</h3>
+            <p>Create your first learning roadmap by chatting with our AI assistant!</p>
+            <button @onclick="NavigateToChat" class="btn-primary-mobile">
+                💬 Start Creating Roadmap
+            </button>
+        </div>
+    }
+    else
+    {
+        <!-- Roadmap Cards -->
+        <div class="roadmap-grid">
+            @foreach (var roadmap in roadmaps)
+            {
+                <div class="roadmap-card-mobile" @onclick="() => ViewRoadmap(roadmap.Id)">
+                    <div class="card-header">
+                        <h6 class="card-title">@GetRoadmapTitle(roadmap)</h6>
+                        <span class="status-badge @GetStatusClass(roadmap.Status)">@GetStatusText(roadmap.Status)</span>
+                    </div>
+                    
+                    <div class="card-content">
+                        <div class="roadmap-stats">
+                            <span class="stat-item">
+                                📚 @roadmap.Modules.Count modules
+                            </span>
+                            <span class="stat-item">
+                                📅 @roadmap.CreatedDate.ToString("MMM dd, yyyy")
+                            </span>
+                        </div>
+                        
+                        @{
+                            var progress = CalculateProgress(roadmap);
+                        }
+                        
+                        @if (progress > 0)
+                        {
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: @(progress)%"></div>
+                                <span class="progress-text">@((int)progress)% complete</span>
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(GetRoadmapDescription(roadmap)))
+                        {
+                            <p class="roadmap-description">@GetRoadmapDescription(roadmap)</p>
+                        }
+                    </div>
+                    
+                    <div class="card-actions">
+                        <div class="view-button">
+                            👁️ View Roadmap
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <!-- Create New Button -->
+        <div class="floating-action">
+            <button @onclick="NavigateToChat" class="fab-button" title="Create New Roadmap">
+                ➕
+            </button>
+        </div>
+    }
+</div>
+
+<style>
+    /* Page Layout */
+    .roadmap-list-page {
+        min-height: calc(100vh - 60px);
+        background: #f8f9fa;
+    }
+
+    .page-header {
+        text-align: center;
+        padding: 24px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin: -16px -16px 24px -16px;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .page-subtitle {
+        margin: 8px 0 0 0;
+        opacity: 0.9;
+        font-size: 16px;
+    }
+
+    /* Loading State */
+    .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 60px 20px;
+        text-align: center;
+    }
+
+    .spinner-large {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e9ecef;
+        border-top-color: #007bff;
+        border-radius: 50%;
+        animation: spin-animation 1s linear infinite;
+        margin-bottom: 20px;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        color: #495057;
+        margin-bottom: 12px;
+    }
+
+    .empty-state p {
+        color: #6c757d;
+        margin-bottom: 24px;
+        font-size: 16px;
+    }
+
+    /* Roadmap Grid */
+    .roadmap-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-bottom: 80px;
+    }
+
+    /* Mobile Roadmap Cards */
+    .roadmap-card-mobile {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .roadmap-card-mobile:active {
+        transform: translateY(2px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+        flex: 1;
+        margin-right: 12px;
+        line-height: 1.3;
+    }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .status-active { background: #d1ecf1; color: #0c5460; }
+    .status-draft { background: #fff3cd; color: #856404; }
+    .status-approved { background: #d4edda; color: #155724; }
+    .status-awaiting { background: #f8d7da; color: #721c24; }
+
+    .card-content {
+        margin-bottom: 16px;
+    }
+
+    .roadmap-stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .stat-item {
+        color: #6c757d;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+    }
+
+    .progress-bar {
+        background: #e9ecef;
+        border-radius: 8px;
+        height: 8px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 8px;
+    }
+
+    .progress-fill {
+        background: linear-gradient(90deg, #28a745, #20c997);
+        height: 100%;
+        border-radius: 8px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-text {
+        font-size: 12px;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .roadmap-description {
+        color: #6c757d;
+        font-size: 14px;
+        line-height: 1.4;
+        margin: 12px 0 0 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .card-actions {
+        border-top: 1px solid #e9ecef;
+        padding-top: 16px;
+        margin-top: 16px;
+    }
+
+    .view-button {
+        text-align: center;
+        color: #007bff;
+        font-weight: 500;
+        font-size: 16px;
+    }
+
+    /* Primary Button */
+    .btn-primary-mobile {
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 28px;
+        font-size: 16px;
+        font-weight: 500;
+        min-height: 48px;
+        touch-action: manipulation;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary-mobile:active {
+        transform: scale(0.98);
+        background: #0056b3;
+    }
+
+    /* Floating Action Button */
+    .floating-action {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        z-index: 999;
+    }
+
+    .fab-button {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #007bff;
+        color: white;
+        border: none;
+        font-size: 24px;
+        box-shadow: 0 4px 12px rgba(0,123,255,0.4);
+        cursor: pointer;
+        touch-action: manipulation;
+        transition: all 0.2s ease;
+    }
+
+    .fab-button:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 8px rgba(0,123,255,0.6);
+    }
+
+    /* Responsive adjustments - will be handled by separate CSS file */
+    .responsive-grid {
+        display: grid;
+        gap: 20px;
+    }
+</style>
+
+@code {
+    private List<Roadmap>? roadmaps;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRoadmaps();
+    }
+
+    private async Task LoadRoadmaps()
+    {
+        isLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            // For now, we'll get the current roadmap
+            // Later this will be extended to get all roadmaps from database
+            var currentRoadmap = RoadmapService.GetRoadMap();
+            
+            if (currentRoadmap != null && currentRoadmap.Modules.Any())
+            {
+                roadmaps = new List<Roadmap> { currentRoadmap };
+            }
+            else
+            {
+                roadmaps = new List<Roadmap>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading roadmaps: {ex.Message}");
+            roadmaps = new List<Roadmap>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void NavigateToChat()
+    {
+        NavManager.NavigateTo("/");
+    }
+
+    private void ViewRoadmap(Guid roadmapId)
+    {
+        NavManager.NavigateTo("/roadmap");
+    }
+
+    private string GetRoadmapTitle(Roadmap roadmap)
+    {
+        // Try to get title from learning profile or generate from modules
+        if (!string.IsNullOrEmpty(roadmap.LearningProfile?.LearningGoal))
+        {
+            return roadmap.LearningProfile.LearningGoal.Length > 50 
+                ? roadmap.LearningProfile.LearningGoal.Substring(0, 50) + "..."
+                : roadmap.LearningProfile.LearningGoal;
+        }
+        
+        if (roadmap.Modules.Any())
+        {
+            return $"Learning Path: {roadmap.Modules.First().Title}";
+        }
+        
+        return "Untitled Roadmap";
+    }
+
+    private string GetRoadmapDescription(Roadmap roadmap)
+    {
+        if (roadmap.Modules.Any())
+        {
+            var totalTopics = roadmap.Modules.Sum(m => m.Topics.Count);
+            var totalConcepts = roadmap.Modules.SelectMany(m => m.Topics).Sum(t => t.Concepts.Count);
+            return $"{totalTopics} topics • {totalConcepts} concepts to master";
+        }
+        return "";
+    }
+
+    private double CalculateProgress(Roadmap roadmap)
+    {
+        if (!roadmap.Modules.Any()) return 0;
+        
+        // Simple progress calculation - you can make this more sophisticated
+        // For now, assume 20% progress for active roadmaps, 100% for completed
+        return roadmap.Status switch
+        {
+            RoadmapStatus.Active => 65.0,
+            RoadmapStatus.Approved => 85.0,
+            RoadmapStatus.Draft => 15.0,
+            RoadmapStatus.AwaitingFeedback => 45.0,
+            _ => 0.0
+        };
+    }
+
+    private string GetStatusClass(RoadmapStatus status)
+    {
+        return status switch
+        {
+            RoadmapStatus.Active => "status-active",
+            RoadmapStatus.Draft => "status-draft",
+            RoadmapStatus.Approved => "status-approved",
+            RoadmapStatus.AwaitingFeedback => "status-awaiting",
+            _ => "status-draft"
+        };
+    }
+
+    private string GetStatusText(RoadmapStatus status)
+    {
+        return status switch
+        {
+            RoadmapStatus.Active => "🟢 Active",
+            RoadmapStatus.Draft => "🟡 Draft",
+            RoadmapStatus.Approved => "✅ Approved", 
+            RoadmapStatus.AwaitingFeedback => "⏳ Pending",
+            _ => "📝 Draft"
+        };
+    }
+}
