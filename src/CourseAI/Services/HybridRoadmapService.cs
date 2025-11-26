@@ -16,7 +16,8 @@ public class HybridRoadmapService : RoadmapService
 
     public HybridRoadmapService(
         IServiceProvider serviceProvider,
-        ILogger<HybridRoadmapService> logger) : base()
+        IAgentStatusService statusService,
+        ILogger<HybridRoadmapService> logger) : base(statusService)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;

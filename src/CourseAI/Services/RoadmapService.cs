@@ -6,6 +6,7 @@ namespace CourseAI.Services;
 public class RoadmapService
 {
     private Roadmap? _roadmap;
+    private readonly IAgentStatusService? _statusService;
 
     public RoadmapService()
     {
@@ -15,6 +16,19 @@ public class RoadmapService
     public RoadmapService(Roadmap? roadmap)
     {
         _roadmap = roadmap ?? new Roadmap();
+    }
+
+    // Constructor for dependency injection
+    public RoadmapService(IAgentStatusService statusService)
+    {
+        _roadmap = new Roadmap();
+        _statusService = statusService;
+    }
+
+    public RoadmapService(Roadmap? roadmap, IAgentStatusService statusService)
+    {
+        _roadmap = roadmap ?? new Roadmap();
+        _statusService = statusService;
     }
 
     public void SetRoadMap(Roadmap roadmap)
@@ -39,6 +53,10 @@ public class RoadmapService
             Status = RoadmapStatus.Draft,
             Modules = new List<RoadmapModule>()
         };
+        
+        // Update progress for roadmap initialization
+        _statusService?.SetProgress("StructuringAgent", "🚀 Initializing learning roadmap...", 10, "Setting up roadmap structure");
+        
         return "Roadmap initialized successfully";
     }
 
@@ -85,6 +103,13 @@ public class RoadmapService
 
         _roadmap.Modules.Add(module);
         _roadmap.LastModifiedDate = DateTime.UtcNow;
+        
+        // Update progress if status service is available
+        _statusService?.UpdateProgress(
+            Math.Min(80, 20 + (_roadmap.Modules.Count * 15)), // Progress grows with modules
+            $"📚 Created module: {title}"
+        );
+        
         return $"Module '{title}' added successfully";
     }
 
@@ -166,6 +191,14 @@ public class RoadmapService
 
         module.Topics.Add(topic);
         _roadmap.LastModifiedDate = DateTime.UtcNow;
+        
+        // Update progress with topic creation details
+        var totalTopics = _roadmap.Modules.Sum(m => m.Topics.Count);
+        _statusService?.UpdateProgress(
+            Math.Min(85, 50 + totalTopics * 2), // Progressive increase with more granular steps
+            $"📋 Added topic: {topicTitle} → {moduleTitle}"
+        );
+        
         return $"Topic '{topicTitle}' added to module '{moduleTitle}'";
     }
 
@@ -233,6 +266,14 @@ public class RoadmapService
 
         topic.Concepts.Add(concept);
         _roadmap.LastModifiedDate = DateTime.UtcNow;
+        
+        // Update progress with detailed concept creation
+        var totalConcepts = _roadmap.Modules.Sum(m => m.Topics.Sum(t => t.Concepts.Count));
+        _statusService?.UpdateProgress(
+            Math.Min(90, 70 + totalConcepts), // More granular progress for concepts
+            $"🎯 Added concept: {conceptTitle} → {topicTitle}"
+        );
+        
         return $"Concept '{conceptTitle}' added to topic '{topicTitle}'";
     }
 
