@@ -7,6 +7,9 @@ using CourseAI.Agents.Interfaces;
 using CourseAI.Components;
 using CourseAI.Models;
 using CourseAI.Services;
+using CourseAI.Data;
+using CourseAI.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +22,15 @@ builder.Services.AddRazorComponents()
         options.DetailedErrors = true;
     });
 
+// Configure Entity Framework with SQLite
+builder.Services.AddDbContext<CourseAIDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+                     "Data Source=Data/courseai.db"));
+
+// Register repositories
+builder.Services.AddScoped<ILearningProfileRepository, LearningProfileRepository>();
+builder.Services.AddScoped<IRoadmapRepository, RoadmapRepository>();
+
 // Configure Azure OpenAI options
 builder.Services.Configure<AzureOpenAIOptions>(
     builder.Configuration.GetSection(AzureOpenAIOptions.SectionName));
@@ -29,10 +41,18 @@ builder.Services.AddSingleton<InstrumentChatClient>();
 // Register Agent Status Service
 builder.Services.AddSingleton<IAgentStatusService, AgentStatusService>();
 
-// Register application services
-builder.Services.AddSingleton<LearningProfileService>();
+// Register hybrid services that provide both in-memory and database persistence
+builder.Services.AddSingleton<HybridLearningProfileService>();
+builder.Services.AddSingleton<HybridRoadmapService>();
+
+// Register services for agents (using hybrid services for backward compatibility)
+builder.Services.AddSingleton<LearningProfileService>(provider => 
+    provider.GetRequiredService<HybridLearningProfileService>());
+builder.Services.AddSingleton<RoadmapService>(provider => 
+    provider.GetRequiredService<HybridRoadmapService>());
+
 builder.Services.AddSingleton<LearningProfileToolsService>();
-builder.Services.AddSingleton<RoadmapService>();
+
 builder.Services.AddHttpClient<WebSearchService>();
 builder.Services.AddSingleton<WebSearchService>();
 
@@ -68,6 +88,13 @@ using var tracerProvider = Sdk.CreateTracerProviderBuilder()
 
 
 var app = builder.Build();
+
+// Ensure database is created and apply any pending migrations
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<CourseAIDbContext>();
+    context.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
