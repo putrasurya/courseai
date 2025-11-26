@@ -1,11 +1,25 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavManager
 
-<div class="page">
-    <main>
-        <article class="content px-4">
+<div class="mobile-layout">
+    <!-- Main content area -->
+    <main class="mobile-main">
+        <article class="content">
             @Body
         </article>
     </main>
+    
+    <!-- Mobile bottom navigation -->
+    <nav class="mobile-nav">
+        <a href="/" class="nav-item @(IsActivePage("/") ? "active" : "")" title="Chat & Create Roadmap">
+            <div class="nav-icon">💬</div>
+            <div class="nav-label">Chat</div>
+        </a>
+        <a href="/roadmaps" class="nav-item @(IsActivePage("/roadmaps") ? "active" : "")" title="My Roadmaps">
+            <div class="nav-icon">📚</div>
+            <div class="nav-label">Roadmaps</div>
+        </a>
+    </nav>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -13,3 +27,16 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool IsActivePage(string path)
+    {
+        if (path == "/")
+        {
+            return NavManager.Uri == NavManager.BaseUri || 
+                   NavManager.ToBaseRelativePath(NavManager.Uri) == "" ||
+                   NavManager.ToBaseRelativePath(NavManager.Uri) == "roadmap";
+        }
+        return NavManager.ToBaseRelativePath(NavManager.Uri).StartsWith(path.TrimStart('/'));
+    }
+}
