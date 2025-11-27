@@ -91,7 +91,7 @@ Visit `https://localhost:5001` → **Watch 7 specialized AI agents collaborate t
 
 **Built with modern, production-ready technologies:**
 
-- **.NET 8** - Latest enterprise web framework
+- **.NET 9** - Latest enterprise web framework
 - **Blazor Server** - Real-time interactive UI with SignalR
 - **Microsoft Agent Framework** - Cutting-edge agent framework 
 - **Azure OpenAI** - GPT-4 integration with enterprise security
