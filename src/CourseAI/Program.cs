@@ -24,8 +24,25 @@ builder.Services.AddRazorComponents()
 
 // Configure Entity Framework with SQLite
 builder.Services.AddDbContext<CourseAIDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
-                     "Data Source=Data/courseai.db"));
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        // Fallback to default path
+        var dataDirectory = Path.Combine(builder.Environment.ContentRootPath, "Data");
+        Directory.CreateDirectory(dataDirectory);
+        connectionString = $"Data Source={Path.Combine(dataDirectory, "courseai.db")};Cache=Shared";
+    }
+    else if (connectionString.Contains("Data Source=Data/"))
+    {
+        // Convert relative path to absolute path
+        var dataDirectory = Path.Combine(builder.Environment.ContentRootPath, "Data");
+        Directory.CreateDirectory(dataDirectory);
+        connectionString = connectionString.Replace("Data Source=Data/", $"Data Source={dataDirectory}/");
+    }
+    
+    options.UseSqlite(connectionString);
+});
 
 // Register repositories
 builder.Services.AddScoped<ILearningProfileRepository, LearningProfileRepository>();
@@ -93,6 +110,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<CourseAIDbContext>();
+    
+    // Ensure the Data directory exists
+    var dataDirectory = Path.Combine(app.Environment.ContentRootPath, "Data");
+    Directory.CreateDirectory(dataDirectory);
+    
     context.Database.EnsureCreated();
 }
 

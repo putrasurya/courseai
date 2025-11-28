@@ -10,6 +10,7 @@
 @using System.Threading.Tasks
 @using CourseAI.Agents
 @using CourseAI.Agents.Interfaces
+@using CourseAI.Services
 @using Markdig
 @using CourseAI.Models
 @implements IDisposable
@@ -780,8 +781,7 @@
             var currentProfile = LearningProfileService.CurrentProfile;
             var currentRoadmap = RoadmapService.GetRoadMap();
             
-            // For hybrid services, the data should already be saved automatically
-            // But let's verify we have valid data
+            // Save profile if it exists
             if (currentProfile != null && !string.IsNullOrWhiteSpace(currentProfile.LearningGoal))
             {
                 // Profile data is automatically saved by HybridLearningProfileService
@@ -789,15 +789,19 @@
                 LearningProfileService.UpdateProfile("learninggoal", currentProfile.LearningGoal);
             }
             
+            // Save complete roadmap if it exists
             if (currentRoadmap != null && currentRoadmap.Modules.Count > 0)
             {
-                // Roadmap data is automatically saved by HybridRoadmapService  
-                // But we can trigger an explicit save by updating the status
-                RoadmapService.UpdateRoadMapStatus(currentRoadmap.Status);
+                // Explicitly save the complete roadmap to database
+                // This ensures all the data built during the conversation is persisted
+                ((HybridRoadmapService)RoadmapService).SetRoadMap(currentRoadmap);
+                
+                // Also update the status to finalized
+                RoadmapService.UpdateRoadMapStatus(RoadmapStatus.Active);
             }
             
             // Give time for async database operations to complete
-            await Task.Delay(1000);
+            await Task.Delay(1500);
         }
         catch (Exception ex)
         {
