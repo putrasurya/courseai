@@ -5,5 +5,7 @@ public enum RoadmapStatus
     Draft,
     AwaitingFeedback,
     Approved,
-    Active
+    Active,
+    InProgress,    // For tests compatibility
+    Completed      // For tests compatibility
 }

@@ -7,5 +7,6 @@ public enum ResourceType
     Tutorial,
     Video,
     Game,
-    Article
+    Article,
+    Course      // For tests compatibility
 }

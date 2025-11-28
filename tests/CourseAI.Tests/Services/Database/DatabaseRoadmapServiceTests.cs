@@ -365,7 +365,11 @@ public class DatabaseRoadmapServiceTests : DatabaseTestBase
         var profile2Service = new DatabaseRoadmapService(_roadmapRepository, _profileRepository, _logger);
         
         // Delete profile1 to simulate getting profile2 as latest
-        await Context.LearningProfiles.RemoveAsync(await Context.LearningProfiles.FindAsync(profile1.Id)!);
+        var profileToRemove = await Context.LearningProfiles.FindAsync(profile1.Id);
+        if (profileToRemove != null)
+        {
+            Context.LearningProfiles.Remove(profileToRemove);
+        }
         await Context.SaveChangesAsync();
         
         await profile2Service.SetRoadMapAsync(roadmap2);

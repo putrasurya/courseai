@@ -322,7 +322,10 @@ public class HybridLearningProfileServiceTests : DatabaseTestBase
 
     public new void Dispose()
     {
-        _serviceProvider?.Dispose();
+        if (_serviceProvider is IDisposable disposableProvider)
+        {
+            disposableProvider.Dispose();
+        }
         base.Dispose();
     }
 }
