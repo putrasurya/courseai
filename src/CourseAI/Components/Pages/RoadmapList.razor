@@ -6,6 +6,7 @@
 @inject IJSRuntime JSRuntime
 
 @using CourseAI.Models
+@using CourseAI.Services
 @using System.ComponentModel
 
 <PageTitle>My Roadmaps - CourseAI</PageTitle>
@@ -354,17 +355,23 @@
         
         try
         {
-            // For now, we'll get the current roadmap
-            // Later this will be extended to get all roadmaps from database
-            var currentRoadmap = RoadmapService.GetRoadMap();
-            
-            if (currentRoadmap != null && currentRoadmap.Modules.Any())
+            // Get all roadmaps from database via HybridRoadmapService
+            if (RoadmapService is HybridRoadmapService hybridService)
             {
-                roadmaps = new List<Roadmap> { currentRoadmap };
+                roadmaps = await hybridService.GetAllRoadmapsAsync();
             }
             else
             {
-                roadmaps = new List<Roadmap>();
+                // Fallback to current roadmap for backward compatibility
+                var currentRoadmap = RoadmapService.GetRoadMap();
+                if (currentRoadmap != null && currentRoadmap.Modules.Any())
+                {
+                    roadmaps = new List<Roadmap> { currentRoadmap };
+                }
+                else
+                {
+                    roadmaps = new List<Roadmap>();
+                }
             }
         }
         catch (Exception ex)

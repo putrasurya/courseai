@@ -146,6 +146,12 @@ public class HybridRoadmapService : RoadmapService
         return result;
     }
 
+    public async Task<List<Roadmap>> GetAllRoadmapsAsync()
+    {
+        return await QueryDatabaseAsync(async dbService => 
+            await dbService.GetAllRoadmapsAsync());
+    }
+
     public new string UpdateRoadMapStatus(RoadmapStatus status)
     {
         // Update database first, then sync to memory

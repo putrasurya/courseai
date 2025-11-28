@@ -135,6 +135,17 @@ public class DatabaseRoadmapService
         return $"Roadmap status updated to {status}";
     }
 
+    [Description("Get all roadmaps for the current profile")]
+    public async Task<List<Roadmap>> GetAllRoadmapsAsync()
+    {
+        var profile = await _profileRepository.GetLatestAsync();
+        if (profile == null)
+            return new List<Roadmap>();
+
+        var roadmaps = await _roadmapRepository.GetByProfileIdAllAsync(profile.Id);
+        return roadmaps.ToList();
+    }
+
     [Description("Update roadmap status")]
     public string UpdateRoadMapStatus(RoadmapStatus status)
     {
