@@ -1,141 +1,77 @@
-# CourseAI - Multi-Agent Learning System 🤖
+# CourseAI - AI Learning Roadmap Generator 🤖
 
-> **Intelligent AI platform featuring sophisticated multi-agent architecture for personalized learning roadmap generation.**
+> **Create personalized learning roadmaps through simple conversation with AI.**
 
 ## 💡 The Problem It Solves
 
-**Imagine you want to learn something new** - maybe React, data science, or cybersecurity - but you're overwhelmed by the endless options:
+**Learning something new** shouldn't be overwhelming:
 
 ❌ **"Where do I even start?"**  
-❌ **"Which tutorials are actually good?"**  
+❌ **"Which resources are actually good?"**  
 ❌ **"What's the right order to learn things?"**  
-❌ **"How do I know if I'm ready for advanced topics?"**  
 
-**CourseAI eliminates this confusion by providing:**
-✅ **Personalized learning paths** tailored to your experience level  
-✅ **Quality-vetted resources** from across the internet  
+**CourseAI eliminates this confusion:**
+✅ **Personalized learning paths** tailored to your level  
+✅ **Quality-vetted resources** from across the web  
 ✅ **Logical progression** based on educational theory  
-✅ **Real-time guidance** that adapts to your goals  
+✅ **Conversational interface** that adapts to your goals  
 
-## 🎯 How It Works - Simple User Experience
+## 🎯 How It Works
 
-1. **💬 Just Tell It What You Want to Learn**
+1. **💬 Tell It What You Want to Learn**
    - "I want to become a front-end developer"
    - "Help me learn machine learning as a beginner"
-   - "I need to upskill in cloud computing"
 
-2. **🤖 AI Agents Work Behind the Scenes**
-   - 7 specialized agents collaborate automatically
-   - No buttons to click, no complex setup
-   - Pure conversational intelligence
-
-3. **📋 Get Your Complete Learning Roadmap**
-   - Step-by-step learning modules
+2. **📋 Get Your Complete Learning Roadmap**
+   - Step-by-step modules with clear objectives
    - Curated resources (videos, courses, docs)
    - Time estimates and prerequisites
-   - Quality-verified links that actually work
 
-4. **🔄 Refine and Improve**
-   - "Add more JavaScript practice"
+3. **🔄 Refine and Improve**
+   - "Add more hands-on practice"
    - "I prefer video tutorials"
-   - "Make it more beginner-friendly"
 
-## 🚀 Try It Now - See The Magic Happen!
+## 🚀 Quick Start
 
 ```bash
-# Experience the multi-agent system in action
 git clone https://github.com/putrasurya/courseai
 cd CourseAI
 dotnet run --project src/CourseAI
 ```
 
-Visit `https://localhost:5001` → **Watch 7 specialized AI agents collaborate to build your perfect learning path!**
+Visit `https://localhost:5001` to start creating your learning roadmap!
+
+## 🛠️ Technology Stack
+
+- **.NET 8** - Modern web framework
+- **Blazor Server** - Interactive UI with real-time updates
+- **Azure OpenAI** - GPT-4 integration
+- **Microsoft Agent Framework** - AI agent coordination
+- **Tavily Search** - Real-time web resource discovery
 
 ---
 
-## 🏗️ The Technical Innovation Behind It
+## ⚙️ Setup
 
-**While you have a simple conversation, here's the sophisticated AI system working for you:**
-
-🧠 **7 AI Agents Collaborate Seamlessly** - Each expert in different aspects of learning  
-🎓 **Educational Intelligence** - Applies real learning theory for optimal progression  
-🔍 **Live Web Discovery** - Finds current, quality resources from across the internet  
-⚡ **Zero Manual Work** - Just conversation, no buttons or complex setup  
-🎯 **Production Quality** - Enterprise-grade architecture with comprehensive validation  
-
-## 🤖 Sophisticated Multi-Agent Architecture
-
-**The technical innovation that makes this possible:**
-
-```
-🎭 OrchestratorAgent (AI Workflow Coordinator)
-├── 📋 PlannerAgent (Conversational Profile Intelligence)
-├── 🏗️ StructuringAgent (Learning Framework Orchestrator)
-│   ├── 🎓 CurriculumArchitectAgent (Educational Theory AI)
-│   ├── 🛤️ PathOptimizationAgent (Learning Sequence AI)
-│   └── 📚 ResourceGatheringAgent (Real-Time Web Discovery)
-└── ✨ RefinementAgent (Feedback Processing Intelligence)
-```
-
-### **The User Experience vs. Technical Complexity**
-
-**What You Experience:** Simple conversation → Perfect learning roadmap  
-**What Happens Behind Scenes:** Complex AI orchestration with 7 specialized agents
-
-**You Say:** *"I want to learn React as a beginner"*  
-**AI Does:** Profile analysis → Curriculum design → Resource discovery → Quality validation → Path optimization → Roadmap generation
-
----
-
-## 🛠️ Enterprise Technology Stack
-
-**Built with modern, production-ready technologies:**
-
-- **.NET 9** - Latest enterprise web framework
-- **Blazor Server** - Real-time interactive UI with SignalR
-- **Microsoft Agent Framework** - Cutting-edge agent framework 
-- **Azure OpenAI** - GPT-4 integration with enterprise security
-- **Multi-Agent Orchestration** - Custom agent coordination patterns
-- **Real-Time Web APIs** - Tavily Search integration for live data
-- **OpenTelemetry** - Production observability and monitoring
-- **Dependency Injection** - Clean, testable architecture
-- **Async/Await Patterns** - High-performance concurrent operations
-
----
-
-## 🔧 Configuration
-
-### Required Settings (appsettings.json)
+### Required Configuration
 ```json
 {
   "AzureOpenAI": {
     "Endpoint": "your-azure-openai-endpoint",
-    "ApiKey": "your-api-key",
-    "ModelDeploymentName": "your-model-deployment"
+    "ApiKey": "your-api-key", 
+    "ModelDeploymentName": "gpt-4"
   },
-  "TavilyApiKey": "your-tavily-api-key" // Optional for web search
+  "TavilyApiKey": "your-tavily-api-key"
 }
 ```
 
-## 🎭 Usage
-
-1. **Start Conversation**: Tell CourseAI what you want to learn
-2. **Profile Building**: Answer questions about your experience and goals
-3. **Automatic Generation**: Watch as your roadmap is created automatically
-4. **Review & Refine**: Provide feedback to improve the roadmap
-5. **Start Learning**: Follow your personalized learning path
-
 ## 📚 Documentation
 
-- [Architecture Details](docs/architecture/current-architecture.md)
-- [Agent Overview](docs/implementation/agents-overview.md)
-- [Configuration Guide](docs/implementation/configuration.md)
-- [Development Setup](docs/development/getting-started.md)
-
-
----
+- **[Architecture Overview](docs/architecture/current-architecture.md)** - System design and AI agents
+- **[Development Guide](docs/development/getting-started.md)** - Setup and development workflow
+- **[Configuration](docs/implementation/configuration.md)** - Detailed setup instructions
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
