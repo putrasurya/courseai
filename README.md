@@ -2,6 +2,8 @@
 
 > **Create personalized learning roadmaps through simple conversation with AI.**
 
+![CourseAI Screenshot](screenshot.png)
+
 ## 💡 The Problem It Solves
 
 **Learning something new** shouldn't be overwhelming:
